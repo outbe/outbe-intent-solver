@@ -26,6 +26,7 @@ solver/
 │  ├── index.ts
 │  ├── allowBlockLists.ts
 │  ├── chainMetadata.ts
+│  ├── tradingPairs.ts
 │  └── types.ts
 └── solvers/
     ├── index.ts
@@ -34,13 +35,16 @@ solver/
     ├── types.ts
     ├── utils.ts
     ├── contracts/
-    └── <eco|hyperlane7683>/
+    └── <eco|hyperlane7683|layerzero7683>/
         ├── index.ts
         ├── listener.ts
+        ├── prepare.ts       # Optional: pre-fill strategy (e.g., auction logic)
         ├── filler.ts
         ├── types.ts
         ├── utils.ts
         ├── contracts/
+        ├── rules/
+        │   └── index.ts
         └── config/
             ├── index.ts
             ├── metadata.ts
@@ -53,17 +57,21 @@ solver/
 - **logger.ts**: Contains the Logger class used for logging messages with various formats and levels.
 - **NonceKeeperWallet.ts**: A class that extends ethers Wallet and prevents nonces race conditions when the solver needs to fill different intents (from different solutions) in the same network.
 - **patch-bigint-buffer-warn.js**: A script to suppress specific warnings related to BigInt and Buffer, ensuring cleaner console output.
+- **config/**: Global configuration for the solver.
+    - **tradingPairs.ts**: Defines supported token swap routes between chains with exchange rates and competitive bidding strategies.
 - **solvers/**: Contains implementations of different solvers and common utilities.
-  - **BaseListener.ts**: An abstract base class that provides common functionality for event listeners. It handles setting up contract connections and defines the interface for parsing event arguments.
-  - **BaseFiller.ts**: An abstract base class that provides common functionality for fillers. It handles the solver's lifecycle `prepareIntent`, `fill`, and `settle`.
-    - **`prepareIntent`**: evaluate allow/block lists, balances, and run the defined rules to decide whether to fill or not an intent.
-    - **`fill`**: The actual filling.
-    - **`settle`**: The settlement step, can be avoided.
-  - **<eco|hyperlane7683>/**: Implements the solvers for the ECO and Hyperlane7683 domains.
-    - **listener.ts**: Extends `BaseListener` to handle domain-specific events.
-    - **filler.ts**: Extends `BaseFiller` to handle domain-specific intents.
-    - **contracts/**: Contains contract ABI and type definitions for interacting with domain-specific contracts.
-  - **index.ts**: Exports the solvers to be used in the main application.
+    - **BaseListener.ts**: An abstract base class that provides common functionality for event listeners. It handles setting up contract connections and defines the interface for parsing event arguments.
+    - **BaseFiller.ts**: An abstract base class that provides common functionality for fillers. It handles the solver's lifecycle `prepareIntent`, `fill`, and `settle`.
+        - **`prepareIntent`**: evaluate allow/block lists, balances, and run the defined rules to decide whether to fill or not an intent.
+        - **`fill`**: The actual filling.
+        - **`settle`**: The settlement step, can be avoided.
+    - **<eco|hyperlane7683|layerzero7683>/**: Implements the solvers for different protocols.
+        - **listener.ts**: Extends `BaseListener` to handle domain-specific events.
+        - **prepare.ts**: (Optional) Implements pre-fill strategy. For LayerZero7683, handles auction logic: submits quotes during quoting phase and verifies winner status.
+        - **filler.ts**: Extends `BaseFiller` to handle domain-specific intents.
+        - **rules/**: Custom validation rules for deciding whether to fill an intent.
+        - **contracts/**: Contains contract ABI and type definitions for interacting with domain-specific contracts.
+    - **index.ts**: Exports the solvers to be used in the main application.
 
 ## Installation
 
@@ -74,19 +82,13 @@ solver/
 
 ### Steps
 
-1. Navigate to the solver directory:
-
-   ```sh
-   cd typescript/solver
-   ```
-
-2. Install the dependencies:
+1. Install the dependencies:
 
    ```sh
    yarn install
    ```
 
-3. Build the project:
+2. Build the project:
 
    ```sh
    yarn build
@@ -112,74 +114,6 @@ Run in watch mode for development:
 yarn dev
 ```
 
-## Managing Solvers
-
-### Adding a New Solver
-
-You can add a new solver in two ways:
-
-```sh
-# Interactive mode - will prompt for solver name and options
-yarn solver:add
-
-# Direct mode - specify the solver name as an argument
-yarn solver:add mySolver
-```
-
-This will:
-
-1. Validate the solver name
-2. Create the solver directory structure
-3. Generate necessary files with boilerplate code
-4. Update the solvers index
-5. Add solver configuration
-6. Set up allow/block lists
-
-The script creates the following structure:
-
-```
-solvers/
-└── yourSolver/
-    ├── index.ts
-    ├── listener.ts
-    ├── filler.ts
-    ├── types.ts
-    ├── contracts/
-    ├── rules/
-    │   └── index.ts
-    └── config/
-        ├── index.ts
-        ├── metadata.ts
-        └── allowBlockLists.ts
-```
-
-After creation:
-
-1. Add your contract ABI to: `solvers/yourSolver/contracts/`
-2. Run `yarn contracts:typegen` to generate TypeScript types
-3. Update the listener and filler implementations
-4. Configure your solver options in `config/solvers.ts`
-5. Update metadata in `solvers/yourSolver/config/metadata.ts`
-
-### Removing Solvers
-
-To remove existing solvers:
-
-```sh
-yarn solver:remove
-```
-
-This will:
-
-1. Show a list of existing solvers (use space to select multiple, enter to confirm)
-2. Ask for confirmation before proceeding
-3. Remove the selected solver directories
-4. Update the solvers index
-5. Remove solver configurations
-6. Clean up generated typechain files
-
-You can cancel the removal operation at any time by pressing 'q'.
-
 ## LayerZero7683 Auction Solver
 
 The LayerZero7683 solver implements a **competitive auction mechanism** where multiple solvers compete by submitting quotes during a quoting period, and only the winning solver (highest output amount) can fill the order.
@@ -199,9 +133,9 @@ The solver uses a **three-module architecture**:
 When an order is detected, the solver:
 1. Checks if quoting period is still active using `destination.isQuotingEnded()`
 2. Calculates competitive output amount:
-   - Finds matching `TradingPair` from config
-   - Calculates market output: `inputAmount * exchangeRate`
-   - Applies boost: `marketOutput * (1 + quoteBoost)`
+    - Finds matching `TradingPair` from config
+    - Calculates market output: `inputAmount * exchangeRate`
+    - Applies boost: `marketOutput * (1 + quoteBoost)`
 3. Submits quote on destination chain via `destination.submitQuote()`
 
 #### Phase 2: Filling Period
@@ -222,13 +156,50 @@ After quoting period ends:
 
 ### Environment Configuration
 
-Set the router contract address in `.env`:
+Create a `.env` file in the solver directory with the following required and optional variables:
 
 ```bash
+# Required: Private key for solver wallet (used to sign transactions)
+PRIVATE_KEY=0x...
+
+# Required: Router contract address (same for all chains)
 ROUTER_CONTRACT=0x3448f63B27161cEE72781319e6b579132d905d08
+
+# Optional: Log level (debug, info, warn, error)
+LOG_LEVEL=info
 ```
 
-This address is used for all chains (Outbe, BSC testnet, etc.).
+**Important**:
+- `PRIVATE_KEY` is **required** - the solver wallet must have sufficient funds on all chains where it will operate
+- `ROUTER_CONTRACT` address is used for all chains (Outbe, BSC testnet, etc.)
+- `LOG_LEVEL` defaults to `info` if not specified
+
+### Chain Configuration
+
+Configure RPC endpoints and chain settings in `config/chainMetadata.ts`:
+
+```typescript
+import { ChainMetadata } from '@hyperlane-xyz/sdk';
+
+export const chainMetadata: Record<string, ChainMetadata> = {
+  outbe_dev: {
+    name: 'outbe_dev',
+    displayName: 'Outbe Devnet',
+    chainId: 64165,
+    rpcUrls: [{ http: 'https://rpc-dev.outbe.network' }],
+    nativeToken: { name: 'COEN', symbol: 'COEN', decimals: 18 },
+  },
+  bsctestnet: {
+    name: 'bsctestnet',
+    displayName: 'BSC Testnet',
+    chainId: 97,
+    rpcUrls: [{ http: 'https://data-seed-prebsc-1-s1.binance.org:8545' }],
+    nativeToken: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+  },
+};
+```
+
+The solver automatically connects to all chains configured in `chainMetadata.ts` using the specified RPC endpoints.
 
 ## Trading Pairs Configuration
 
@@ -278,14 +249,14 @@ export const tradingPairs: TradingPair[] = [
 When processing an order:
 
 1. **Profitability Check** (`checkExchangeRate` rule):
-   - Finds matching pair for `originChain:inputToken → destinationChain:outputToken`
-   - Calculates: `marketOutput = inputAmount * exchangeRate`
-   - Validates: `marketOutput >= userMinimumRequired`
+    - Finds matching pair for `originChain:inputToken → destinationChain:outputToken`
+    - Calculates: `marketOutput = inputAmount * exchangeRate`
+    - Validates: `marketOutput >= userMinimumRequired`
 
 2. **Quote Calculation** (`calculateBestOutput` in prepare):
-   - Market output: `inputAmount * exchangeRate`
-   - Apply boost: `marketOutput * (1 + quoteBoost)`
-   - Submit to auction: `max(boostedOutput, userMinimum)`
+    - Market output: `inputAmount * exchangeRate`
+    - Apply boost: `marketOutput * (1 + quoteBoost)`
+    - Submit to auction: `max(boostedOutput, userMinimum)`
 
 3. **Example Flow**:
    ```
@@ -324,14 +295,12 @@ To add support for new token pairs:
    ```
 3. Restart solver
 
-**Note**: Exchange rate should include your desired profit margin. The solver will automatically query token decimals on-chain.
 
 ## Intent Filtering
 
 Configure which intents to fill or ignore using allow/block lists. Configure at:
 
-- Global level: `config/allowBlockLists.ts`
-- Solver level: `solvers/<solver>/config/allowBlockLists.ts`
+- `config/allowBlockLists.ts`
 
 ```typescript
 const allowBlockLists: AllowBlockLists = {
@@ -340,26 +309,7 @@ const allowBlockLists: AllowBlockLists = {
 };
 ```
 
-Format:
 
-```typescript
-type Wildcard = "*";
-
-type AllowBlockListItem = {
-   senderAddress: string | string[] | Wildcard
-   destinationDomain: string | string[] | Wildcard
-   recipientAddress: string | string[] | Wildcard
-}
-
-type AllowBlockLists = {
-   allowList: AllowBlockListItem[]
-   blockList: AllowBlockListItem[]
-}
-```
-
-Both the allow-list and block-lists have "any" semantics. In other words, the Solver will deliver intents that match any of the allow-list filters, and ignore intents that match any of the block-list filters.
-
-The block-list supersedes the allow-list, i.e. if a message matches both the allow-list and the block-list, it will not be delivered.
 
 ## Logging
 
