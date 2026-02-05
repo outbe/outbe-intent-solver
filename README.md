@@ -153,7 +153,7 @@ export const tradingPairs: TradingPair[] = [
     destinationChain: "bsctestnet",
     inputToken: "0x0000000000000000000000000000000000000000", // Native COEN
     outputToken: "0x0000000000000000000000000000000000000000", // Native BNB
-    exchangeRate: 0.0001,  // 1 COEN = 0.0001 BNB (with profit)
+    exchangeRate: 0.0001,  // 1 COEN = 0.0001 BNB
     quoteBoost: 0.03,      // Offer 3% more to win
   },
 
@@ -170,7 +170,7 @@ export const tradingPairs: TradingPair[] = [
 ```
 
 **Parameters**:
-- `exchangeRate`: Your price including profit margin (market rate + your profit)
+- `exchangeRate`: Exchange rate for the token pair (e.g., 0.0001 means 1 COEN = 0.0001 BNB)
 - `quoteBoost`: Additional % offered during auction to increase winning chances (e.g., 0.02 = 2% more)
 
 **To add new token pairs**: Edit `solver/config/tradingPairs.ts` and add new entries following the format above. Use `0x0000000000000000000000000000000000000000` for native tokens (COEN, BNB, ETH). Restart the solver after changes.
@@ -242,7 +242,7 @@ After quoting period ends:
 
 - **Auction deduplication**: On-chain check via `destination.hasSolverQuoted()`
 - **Dynamic decimals**: Queries token decimals automatically
-- **Profitable order validation**: Checks market rate vs user minimum
+- **Order validation**: Checks if solver can fulfill order based on configured exchange rates
 - **Competitive bidding**: Configurable `quoteBoost` per token
 - **Native token support**: Handles both ERC20 and native tokens (ETH, BNB, COEN)
 
@@ -250,14 +250,14 @@ After quoting period ends:
 
 When processing an order:
 
-1. **Profitability Check** (`checkExchangeRate` rule):
+1. **Exchange Rate Check** (`checkExchangeRate` rule):
     - Finds matching pair for `originChain:inputToken → destinationChain:outputToken`
-    - Calculates: `marketOutput = inputAmount * exchangeRate`
-    - Validates: `marketOutput >= userMinimumRequired`
+    - Calculates: `solverOutput = inputAmount * exchangeRate`
+    - Validates: `solverOutput >= userMinimumRequired`
 
 2. **Quote Calculation** (`calculateBestOutput` in prepare):
-    - Market output: `inputAmount * exchangeRate`
-    - Apply boost: `marketOutput * (1 + quoteBoost)`
+    - Base output: `inputAmount * exchangeRate`
+    - Apply boost: `baseOutput * (1 + quoteBoost)`
     - Submit to auction: `max(boostedOutput, userMinimum)`
 
 3. **Example Flow**:
@@ -266,12 +266,12 @@ When processing an order:
 
    TradingPair: exchangeRate = 0.012, quoteBoost = 0.02
 
-   1. Check profitable:
-      - Market: 100 * 0.012 = 1.2 USDC
-      - Check: 1.2 >= 1 ✅ Profitable!
+   1. Check if solver can fulfill:
+      - Solver output: 100 * 0.012 = 1.2 USDC
+      - Check: 1.2 >= 1 ✅ Can fulfill!
 
    2. Calculate competitive quote:
-      - Market: 1.2 USDC
+      - Base: 1.2 USDC
       - Boost: 1.2 * (1 + 0.02) = 1.224 USDC
       - Submit quote: 1.224 USDC
 
