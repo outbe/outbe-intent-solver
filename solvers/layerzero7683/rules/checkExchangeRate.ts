@@ -3,10 +3,11 @@ import { bytes32ToAddress } from "@hyperlane-xyz/utils";
 import { chainIdsToName, tradingPairs } from "../../../config/index.js";
 import { getTokenDecimals } from "../utils.js";
 import { LayerZero7683Rule } from "../filler.js";
+import { ethers } from "ethers";
 
 /**
- * Check if order is profitable using configured trading pairs
- * Validates that solver's market rate output is better than user's minimum requirement
+ * Check if order can be fulfilled using configured trading pairs
+ * Validates that solver's exchange rate output meets user's minimum requirement
  */
 export function checkExchangeRate(): LayerZero7683Rule {
   return async (parsedArgs, context) => {
@@ -51,28 +52,32 @@ export function checkExchangeRate(): LayerZero7683Rule {
       context.multiProvider
     );
 
-    // Calculate market output based on exchange rate
-    const inputAmountFloat = Number(inputAmount.toString()) / 10 ** inputDecimals;
-    const marketOutputFloat = inputAmountFloat * pair.exchangeRate;
-    const marketOutputAmount = BigNumber.from(
-      Math.floor(marketOutputFloat * 10 ** outputDecimals).toString()
+    // Calculate solver output based on exchange rate (all in BigNumber for precision)
+    // Store exchangeRate with 18 decimals precision (Ethereum standard)
+    const RATE_DECIMALS = 18;
+    const exchangeRateBN = ethers.utils.parseUnits(
+      pair.exchangeRate.toString(),
+      RATE_DECIMALS
     );
 
-    // Check if profitable: market output should be >= user's minimum required
-    if (marketOutputAmount.lt(minOutputAmount)) {
+    // Formula: (inputAmount * exchangeRate * 10^outputDecimals) / 10^(inputDecimals + RATE_DECIMALS)
+    // This minimizes divisions and preserves precision
+    const solverOutputAmount = inputAmount
+      .mul(exchangeRateBN)
+      .mul(BigNumber.from(10).pow(outputDecimals))
+      .div(BigNumber.from(10).pow(inputDecimals + RATE_DECIMALS));
+
+    // Check if solver can fulfill: output should be >= user's minimum required
+    if (solverOutputAmount.lt(minOutputAmount)) {
       return {
         success: false,
-        error: `Order not profitable. Market output: ${marketOutputAmount.toString()}, User wants: ${minOutputAmount.toString()}`,
+        error: `Cannot fulfill order. Solver output: ${solverOutputAmount.toString()}, User minimum: ${minOutputAmount.toString()}`,
       };
     }
 
-    // Calculate profit
-    const profit = marketOutputAmount.sub(minOutputAmount);
-    const profitPercent = profit.mul(10000).div(marketOutputAmount).toNumber() / 100;
-
     return {
       success: true,
-      data: `Profitable order: market=${marketOutputAmount.toString()}, user wants=${minOutputAmount.toString()}, profit=${profitPercent.toFixed(2)}%`,
+      data: `Order validated: solver output=${solverOutputAmount.toString()}, user minimum=${minOutputAmount.toString()}`,
     };
   };
 }

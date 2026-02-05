@@ -6,8 +6,8 @@
 export interface TradingPair {
   originChain: string;
   destinationChain: string;
-  inputToken: string; // Use 0x0000000000000000000000000000000000000000 for native token
-  outputToken: string; // Use 0x0000000000000000000000000000000000000000 for native token
+  inputToken: string; // Use 0x0000000000000000000000000000000000000000 for native token what user paid
+  outputToken: string; // Use 0x0000000000000000000000000000000000000000 for native token what solver paid
   exchangeRate: number; // Exchange rate with profit included (outputAmount per 1 inputToken)
   quoteBoost: number; // Extra % to offer in auction to win (0.02 = 2% more)
 }
@@ -17,7 +17,7 @@ export const tradingPairs: TradingPair[] = [
 
   // Outbe native COEN → BSC native BNB
   {
-    originChain: "outbe_dev",
+    originChain: "outbe",
     destinationChain: "bsctestnet",
     inputToken: "0x0000000000000000000000000000000000000000", // Native COEN
     outputToken: "0x0000000000000000000000000000000000000000", // Native BNB
@@ -28,7 +28,7 @@ export const tradingPairs: TradingPair[] = [
   // BSC native BNB → Outbe native COEN
   {
     originChain: "bsctestnet",
-    destinationChain: "outbe_dev",
+    destinationChain: "outbe",
     inputToken: "0x0000000000000000000000000000000000000000", // Native BNB
     outputToken: "0x0000000000000000000000000000000000000000", // Native COEN
     exchangeRate: 10000, // 1 BNB = 10000 COEN (inverse, with profit)
@@ -39,7 +39,7 @@ export const tradingPairs: TradingPair[] = [
 
   // Outbe native COEN → BSC COEN token
   {
-    originChain: "outbe_dev",
+    originChain: "outbe",
     destinationChain: "bsctestnet",
     inputToken: "0x0000000000000000000000000000000000000000", // Native COEN
     outputToken: "0x5cDF01b5Cb3C82a71f423dB6a91c721f138EbEce", // COEN token on BSC
@@ -50,7 +50,7 @@ export const tradingPairs: TradingPair[] = [
   // BSC COEN token → Outbe native COEN
   {
     originChain: "bsctestnet",
-    destinationChain: "outbe_dev",
+    destinationChain: "outbe",
     inputToken: "0x5cDF01b5Cb3C82a71f423dB6a91c721f138EbEce", // COEN token on BSC
     outputToken: "0x0000000000000000000000000000000000000000", // Native COEN
     exchangeRate: 1.0, // 1:1 same token (with bridge fee included)
@@ -61,7 +61,7 @@ export const tradingPairs: TradingPair[] = [
 
   // Outbe native COEN → BSC USDC
   {
-    originChain: "outbe_dev",
+    originChain: "outbe",
     destinationChain: "bsctestnet",
     inputToken: "0x0000000000000000000000000000000000000000", // Native COEN
     outputToken: "0xae878856F2bEb1F716023043daFef50825d21396", // USDC on BSC (6 decimals)
@@ -72,7 +72,7 @@ export const tradingPairs: TradingPair[] = [
   // BSC USDC → Outbe native COEN
   {
     originChain: "bsctestnet",
-    destinationChain: "outbe_dev",
+    destinationChain: "outbe",
     inputToken: "0xae878856F2bEb1F716023043daFef50825d21396", // USDC on BSC (6 decimals)
     outputToken: "0x0000000000000000000000000000000000000000", // Native COEN
     exchangeRate: 83.333333, // 1 USDC = 83.33 COEN (with profit)

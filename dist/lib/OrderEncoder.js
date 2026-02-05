@@ -1,4 +1,4 @@
-import { utils } from "ethers";
+import { utils, BigNumber } from "ethers";
 /**
  * ORDER_DATA_TYPE constant from OrderEncoder.sol
  */
@@ -95,9 +95,9 @@ export function createOrderData(params) {
         recipient: utils.hexZeroPad(params.recipient, 32),
         inputToken: utils.hexZeroPad(params.inputToken, 32),
         outputToken: utils.hexZeroPad(params.outputToken, 32),
-        amountIn: params.amountIn,
-        amountOut: params.amountOut,
-        senderNonce: params.senderNonce,
+        amountIn: BigNumber.from(params.amountIn),
+        amountOut: BigNumber.from(params.amountOut),
+        senderNonce: BigNumber.from(params.senderNonce),
         originDomain: params.originDomain,
         destinationDomain: params.destinationDomain,
         destinationSettler: utils.hexZeroPad(params.destinationSettler, 32),

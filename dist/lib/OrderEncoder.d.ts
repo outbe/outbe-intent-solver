@@ -1,3 +1,4 @@
+import { BigNumber } from "ethers";
 /**
  * OrderData structure matching Solidity struct in libs/OrderEncoder.sol
  */
@@ -6,9 +7,9 @@ export interface OrderData {
     recipient: string;
     inputToken: string;
     outputToken: string;
-    amountIn: string;
-    amountOut: string;
-    senderNonce: string;
+    amountIn: BigNumber;
+    amountOut: BigNumber;
+    senderNonce: BigNumber;
     originDomain: number;
     destinationDomain: number;
     destinationSettler: string;
@@ -53,9 +54,9 @@ export declare function createOrderData(params: {
     recipient: string;
     inputToken: string;
     outputToken: string;
-    amountIn: string;
-    amountOut: string;
-    senderNonce: string;
+    amountIn: BigNumber | string;
+    amountOut: BigNumber | string;
+    senderNonce: BigNumber | string;
     originDomain: number;
     destinationDomain: number;
     destinationSettler: string;

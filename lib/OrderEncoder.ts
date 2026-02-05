@@ -1,4 +1,4 @@
-import { utils } from "ethers";
+import { utils, BigNumber } from "ethers";
 
 /**
  * OrderData structure matching Solidity struct in libs/OrderEncoder.sol
@@ -8,9 +8,9 @@ export interface OrderData {
   recipient: string; // bytes32
   inputToken: string; // bytes32
   outputToken: string; // bytes32
-  amountIn: string; // uint256
-  amountOut: string; // uint256
-  senderNonce: string; // uint256
+  amountIn: BigNumber; // uint256
+  amountOut: BigNumber; // uint256
+  senderNonce: BigNumber; // uint256
   originDomain: number; // uint32
   destinationDomain: number; // uint32
   destinationSettler: string; // bytes32
@@ -132,9 +132,9 @@ export function createOrderData(params: {
   recipient: string; // address (will be padded to bytes32)
   inputToken: string; // address (will be padded to bytes32)
   outputToken: string; // address (will be padded to bytes32)
-  amountIn: string;
-  amountOut: string;
-  senderNonce: string;
+  amountIn: BigNumber | string; // uint256
+  amountOut: BigNumber | string; // uint256
+  senderNonce: BigNumber | string; // uint256
   originDomain: number;
   destinationDomain: number;
   destinationSettler: string; // address (will be padded to bytes32)
@@ -146,9 +146,9 @@ export function createOrderData(params: {
     recipient: utils.hexZeroPad(params.recipient, 32),
     inputToken: utils.hexZeroPad(params.inputToken, 32),
     outputToken: utils.hexZeroPad(params.outputToken, 32),
-    amountIn: params.amountIn,
-    amountOut: params.amountOut,
-    senderNonce: params.senderNonce,
+    amountIn: BigNumber.from(params.amountIn),
+    amountOut: BigNumber.from(params.amountOut),
+    senderNonce: BigNumber.from(params.senderNonce),
     originDomain: params.originDomain,
     destinationDomain: params.destinationDomain,
     destinationSettler: utils.hexZeroPad(params.destinationSettler, 32),
