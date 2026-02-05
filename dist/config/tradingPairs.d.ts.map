@@ -1,0 +1,1 @@
+{"version":3,"file":"tradingPairs.d.ts","sourceRoot":"","sources":["../../config/tradingPairs.ts"],"names":[],"mappings":"AAAA;;;GAGG;AAEH,MAAM,WAAW,WAAW;IAC1B,WAAW,EAAE,MAAM,CAAC;IACpB,gBAAgB,EAAE,MAAM,CAAC;IACzB,UAAU,EAAE,MAAM,CAAC;IACnB,WAAW,EAAE,MAAM,CAAC;IACpB,YAAY,EAAE,MAAM,CAAC;IACrB,UAAU,EAAE,MAAM,CAAC;CACpB;AAED,eAAO,MAAM,YAAY,EAAE,WAAW,EAwFrC,CAAC"}
