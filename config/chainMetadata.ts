@@ -1,10 +1,10 @@
 import { z } from "zod";
 
-import { ChainMetadataSchema, ExplorerFamily } from "@hyperlane-xyz/sdk";
+import { ChainMap, ChainMetadata, ChainMetadataSchema, ExplorerFamily } from "@hyperlane-xyz/sdk";
 import { ProtocolType } from "@hyperlane-xyz/utils";
 
 
-const customChainMetadata = {
+const customChainMetadata: ChainMap<ChainMetadata> = {
   outbe: {
     protocol: ProtocolType.Ethereum,
     chainId: 424242,

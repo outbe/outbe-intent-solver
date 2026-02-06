@@ -21,6 +21,7 @@ export function checkExchangeRate() {
             p.destinationChain === destinationChainName &&
             p.inputToken.toLowerCase() === inputToken.toLowerCase() &&
             p.outputToken.toLowerCase() === outputToken.toLowerCase());
+        console.log(pair);
         if (!pair) {
             return {
                 success: false,

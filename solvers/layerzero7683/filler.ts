@@ -190,9 +190,7 @@ class LayerZero7683Filler extends BaseFiller<
 
           const receipt = await tx.wait();
           const baseUrl =
-            this.multiProvider.getChainMetadata(_chainId).blockExplorers?.[0]
-              .url;
-
+            this.multiProvider.getChainMetadata(_chainId).blockExplorers?.[0]?.url;
           const txInfo = baseUrl
             ? `${baseUrl}/tx/${receipt.transactionHash}`
             : receipt.transactionHash;

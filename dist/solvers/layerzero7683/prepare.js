@@ -62,7 +62,7 @@ class LayerZero7683Prepare {
         const { chainIdsToName } = await import("../../config/index.js");
         const originChainName = chainIdsToName[originDomainId.toString()];
         const destinationChainName = chainIdsToName[destinationDomainId.toString()];
-        const inputToken = bytes32ToAddress(orderData.sender); // Assuming sender is input token address
+        const inputToken = bytes32ToAddress(orderData.inputToken); // Assuming sender is input token address
         const outputToken = bytes32ToAddress(orderData.outputToken);
         const inputAmount = orderData.amountIn;
         const minOutputAmount = orderData.amountOut;
@@ -170,12 +170,18 @@ class LayerZero7683Prepare {
         // Setup destination contract (reused across all methods)
         const destinationSettler = bytes32ToAddress(data.fillInstructions[0].destinationSettler);
         const _chainId = data.fillInstructions[0].destinationChainId.toString();
-        const provider = this.multiProvider.getProvider(_chainId);
-        this.destinationCt = LayerZero7683__factory.connect(destinationSettler, provider);
         this.destinationSigner = this.multiProvider.getSigner(_chainId);
+        this.destinationCt = LayerZero7683__factory.connect(destinationSettler, this.destinationSigner);
         // PHASE DETECTION: Check if quoting period has ended
         const quotingEnded = await this.destinationCt.isQuotingEnded(orderData);
-        if (!quotingEnded) {
+        if (quotingEnded) {
+            // Quoting already ended, skip to winner check
+            log.info({
+                msg: "Quoting already ended - checking winner directly",
+                orderId: parsedArgs.orderId,
+            });
+        }
+        else {
             // QUOTING PHASE: Submit quote and wait for period to end
             log.info({
                 msg: "Quoting phase active - submitting quote",
