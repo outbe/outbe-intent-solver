@@ -12,6 +12,7 @@ const metadata: Layerzero7683Metadata = {
     {
       address: ROUTER_CONTRACT,
       chainName: "bsctestnet",
+
     },
     {
       address: ROUTER_CONTRACT,

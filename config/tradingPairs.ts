@@ -21,7 +21,7 @@ export const tradingPairs: TradingPair[] = [
     destinationChain: "bsctestnet",
     inputToken: "0x0000000000000000000000000000000000000000", // Native COEN
     outputToken: "0x0000000000000000000000000000000000000000", // Native BNB
-    exchangeRate: 0.0001, // 1 COEN = 0.0001 BNB (with profit included)
+    exchangeRate: 1, // 1 COEN = 0.0001 BNB (with profit included)
     quoteBoost: 0.03, // 3% boost for native swaps
   },
 
@@ -31,8 +31,8 @@ export const tradingPairs: TradingPair[] = [
     destinationChain: "outbe",
     inputToken: "0x0000000000000000000000000000000000000000", // Native BNB
     outputToken: "0x0000000000000000000000000000000000000000", // Native COEN
-    exchangeRate: 10000, // 1 BNB = 10000 COEN (inverse, with profit)
-    quoteBoost: 0.03,
+    exchangeRate: 1, // 1 BNB = 10000 COEN (inverse, with profit)
+    quoteBoost: 0.02,
   },
 
   // ============ Native COEN (Outbe) ↔ COEN token (BSC) ============

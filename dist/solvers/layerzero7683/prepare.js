@@ -5,6 +5,8 @@ import * as OrderEncoder from "../../lib/OrderEncoder.js";
 import { tradingPairs } from "../../config/index.js";
 class LayerZero7683Prepare {
     multiProvider;
+    destinationCt;
+    destinationSigner;
     constructor(multiProvider) {
         this.multiProvider = multiProvider;
     }
@@ -12,16 +14,12 @@ class LayerZero7683Prepare {
      * Submit quote during auction period
      */
     async submitQuote(parsedArgs, data) {
-        const { destinationChainId, destinationSettler, originData } = data.fillInstructions[0];
-        const _chainId = destinationChainId.toString();
-        const destinationSettlerAddress = bytes32ToAddress(destinationSettler);
-        const filler = this.multiProvider.getSigner(_chainId);
-        const fillerAddress = await filler.getAddress();
-        const destination = LayerZero7683__factory.connect(destinationSettlerAddress, filler);
+        const { originData } = data.fillInstructions[0];
+        const fillerAddress = await this.destinationSigner.getAddress();
         // Decode order data
         const orderData = OrderEncoder.decode(originData);
         // Check if already quoted (on-chain deduplication)
-        const alreadyQuoted = await destination.hasSolverQuoted(parsedArgs.orderId, fillerAddress);
+        const alreadyQuoted = await this.destinationCt.hasSolverQuoted(parsedArgs.orderId, fillerAddress);
         if (alreadyQuoted) {
             log.info({
                 msg: "Already submitted quote",
@@ -30,16 +28,16 @@ class LayerZero7683Prepare {
             return;
         }
         // Calculate best output amount
-        const bestOutputAmount = await this.calculateBestOutput(parsedArgs, data);
+        const bestOutputAmount = await this.calculateBestOutput(data);
         log.info({
             msg: "Submitting quote",
             orderId: parsedArgs.orderId,
             amount: bestOutputAmount.toString(),
         });
         // Submit quote on destination chain
-        const tx = await destination.submitQuote(parsedArgs.orderId, bestOutputAmount, orderData);
+        const tx = await this.destinationCt.submitQuote(parsedArgs.orderId, bestOutputAmount, orderData);
         const receipt = await tx.wait();
-        const baseUrl = this.multiProvider.getChainMetadata(_chainId).blockExplorers?.[0].url;
+        const baseUrl = this.destinationSigner.blockExplorers?.[0].url;
         const txInfo = baseUrl
             ? `${baseUrl}/tx/${receipt.transactionHash}`
             : receipt.transactionHash;
@@ -55,7 +53,7 @@ class LayerZero7683Prepare {
      * Calculate best output amount for competitive bidding
      * Uses tradingPairs config to calculate market rate + quoteBoost
      */
-    async calculateBestOutput(parsedArgs, data) {
+    async calculateBestOutput(data) {
         const originData = data.fillInstructions[0].originData;
         const orderData = OrderEncoder.decode(originData);
         // Extract order info
@@ -93,20 +91,43 @@ class LayerZero7683Prepare {
         return finalOutput;
     }
     /**
+     * Wait for quoting period to end by polling contract
+     */
+    async waitForQuotingEnd(orderData) {
+        // Get quoting period from contract
+        const quotingPeriodBN = await this.destinationCt.quotingPeriod();
+        const quotingPeriodMs = quotingPeriodBN.toNumber() * 1000;
+        const pollInterval = Math.min(2000, quotingPeriodMs / 5); // Poll 5 times during period, min 2s
+        const maxWaitTime = quotingPeriodMs + 10000; // quoting period + 10s buffer
+        const startTime = Date.now();
+        log.info({
+            msg: "Waiting for quoting period to end",
+            quotingPeriodSeconds: quotingPeriodBN.toNumber(),
+            pollIntervalMs: pollInterval,
+        });
+        while (Date.now() - startTime < maxWaitTime) {
+            const quotingEnded = await this.destinationCt.isQuotingEnded(orderData);
+            if (quotingEnded) {
+                log.info({
+                    msg: "Quoting period ended",
+                    waitedMs: Date.now() - startTime,
+                });
+                return;
+            }
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+        }
+        throw new Error(`Quoting period did not end within ${maxWaitTime}ms`);
+    }
+    /**
      * Check if this solver won the auction
      * Returns winning amount if won, undefined otherwise
      */
     async isWinner(parsedArgs, data) {
-        const destinationSettler = bytes32ToAddress(data.fillInstructions[0].destinationSettler);
-        const _chainId = data.fillInstructions[0].destinationChainId.toString();
-        const provider = this.multiProvider.getProvider(_chainId);
-        const filler = this.multiProvider.getSigner(_chainId);
-        const fillerAddress = await filler.getAddress();
-        const destination = LayerZero7683__factory.connect(destinationSettler, provider);
+        const fillerAddress = await this.destinationSigner.getAddress();
         const originData = data.fillInstructions[0].originData;
         const orderData = OrderEncoder.decode(originData);
         // Check if there are any quotes
-        const hasQuotes = await destination.hasQuotes(parsedArgs.orderId);
+        const hasQuotes = await this.destinationCt.hasQuotes(parsedArgs.orderId);
         if (!hasQuotes) {
             log.info({
                 msg: "No quotes submitted - cannot fill",
@@ -115,7 +136,7 @@ class LayerZero7683Prepare {
             return undefined;
         }
         // Get winner from contract
-        const [winnerAddress, winningAmount] = await destination.getWinner(parsedArgs.orderId, orderData);
+        const [winnerAddress, winningAmount] = await this.destinationCt.getWinner(parsedArgs.orderId, orderData);
         const isWinner = winnerAddress.toLowerCase() === fillerAddress.toLowerCase();
         if (!isWinner) {
             log.info({
@@ -137,7 +158,7 @@ class LayerZero7683Prepare {
      * Prepare order for filling - handles auction logic
      * Returns object with shouldFill flag and winningAmount if won
      */
-    async prepare(parsedArgs, originChainName, blockNumber) {
+    async prepare(parsedArgs, _originChainName, _blockNumber) {
         // Extract intent data
         const data = {
             fillInstructions: parsedArgs.resolvedOrder.fillInstructions,
@@ -146,21 +167,23 @@ class LayerZero7683Prepare {
         // Decode order data to check auction phase
         const originData = data.fillInstructions[0].originData;
         const orderData = OrderEncoder.decode(originData);
-        // Get destination router to check quoting deadline
+        // Setup destination contract (reused across all methods)
         const destinationSettler = bytes32ToAddress(data.fillInstructions[0].destinationSettler);
         const _chainId = data.fillInstructions[0].destinationChainId.toString();
         const provider = this.multiProvider.getProvider(_chainId);
-        const destination = LayerZero7683__factory.connect(destinationSettler, provider);
+        this.destinationCt = LayerZero7683__factory.connect(destinationSettler, provider);
+        this.destinationSigner = this.multiProvider.getSigner(_chainId);
         // PHASE DETECTION: Check if quoting period has ended
-        const quotingEnded = await destination.isQuotingEnded(orderData);
+        const quotingEnded = await this.destinationCt.isQuotingEnded(orderData);
         if (!quotingEnded) {
-            // QUOTING PHASE: Submit quote instead of filling
+            // QUOTING PHASE: Submit quote and wait for period to end
             log.info({
-                msg: "Quoting phase active",
+                msg: "Quoting phase active - submitting quote",
                 orderId: parsedArgs.orderId,
             });
             await this.submitQuote(parsedArgs, data);
-            return { shouldFill: false }; // Don't fill yet - quoting phase
+            // Wait for quoting period to end
+            await this.waitForQuotingEnd(orderData);
         }
         // FILLING PHASE: Check if we won the auction
         log.info({

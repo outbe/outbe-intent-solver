@@ -10,6 +10,9 @@ import { LayerZero7683Rule } from "../filler.js";
 export function checkExchangeRate(): LayerZero7683Rule {
   return async (parsedArgs, context) => {
     // Extract order info
+
+
+      console.log('aaaaaaaaaaaaaaaa');
     const originChainId = parsedArgs.resolvedOrder.originChainId.toString();
     const originChainName = chainIdsToName[originChainId];
 
@@ -30,6 +33,8 @@ export function checkExchangeRate(): LayerZero7683Rule {
         p.inputToken.toLowerCase() === inputToken.toLowerCase() &&
         p.outputToken.toLowerCase() === outputToken.toLowerCase()
     );
+
+    console.log(pair);
 
     if (!pair) {
       return {
