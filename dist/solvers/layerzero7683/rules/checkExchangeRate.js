@@ -1,8 +1,6 @@
-import { BigNumber } from "@ethersproject/bignumber";
 import { bytes32ToAddress } from "@hyperlane-xyz/utils";
 import { chainIdsToName, tradingPairs } from "../../../config/index.js";
-import { getTokenDecimals } from "../utils.js";
-import { ethers } from "ethers";
+import { getTokenDecimals, calculateSolverOutput } from "../utils.js";
 /**
  * Check if order can be fulfilled using configured trading pairs
  * Validates that solver's exchange rate output meets user's minimum requirement
@@ -32,26 +30,18 @@ export function checkExchangeRate() {
         // Get token decimals dynamically
         const inputDecimals = await getTokenDecimals(inputToken, originChainName, context.multiProvider);
         const outputDecimals = await getTokenDecimals(outputToken, destinationChainName, context.multiProvider);
-        // Calculate solver output based on exchange rate (all in BigNumber for precision)
-        // Store exchangeRate with 18 decimals precision (Ethereum standard)
-        const RATE_DECIMALS = 18;
-        const exchangeRateBN = ethers.utils.parseUnits(pair.exchangeRate.toString(), RATE_DECIMALS);
-        // Formula: (inputAmount * exchangeRate * 10^outputDecimals) / 10^(inputDecimals + RATE_DECIMALS)
-        // This minimizes divisions and preserves precision
-        const solverOutputAmount = inputAmount
-            .mul(exchangeRateBN)
-            .mul(BigNumber.from(10).pow(outputDecimals))
-            .div(BigNumber.from(10).pow(inputDecimals + RATE_DECIMALS));
-        // Check if solver can fulfill: output should be >= user's minimum required
-        if (solverOutputAmount.lt(minOutputAmount)) {
+        // Calculate solver output with quoteBoost (what we'll actually offer in auction)
+        const boostedOutput = calculateSolverOutput(inputAmount, pair.exchangeRate, inputDecimals, outputDecimals, pair.quoteBoost);
+        // Check if boosted output meets user's minimum (this is what we'll offer in auction)
+        if (boostedOutput.lt(minOutputAmount)) {
             return {
                 success: false,
-                error: `Cannot fulfill order. Solver output: ${solverOutputAmount.toString()}, User minimum: ${minOutputAmount.toString()}`,
+                error: `Cannot fulfill order. Boosted output: ${boostedOutput.toString()}, User minimum: ${minOutputAmount.toString()}`,
             };
         }
         return {
             success: true,
-            data: `Order validated: solver output=${solverOutputAmount.toString()}, user minimum=${minOutputAmount.toString()}`,
+            data: `Order validated: boosted output=${boostedOutput.toString()}, user minimum=${minOutputAmount.toString()}`,
         };
     };
 }

@@ -6,7 +6,7 @@ const customChainMetadata = {
         protocol: ProtocolType.Ethereum,
         chainId: 424242,
         domainId: 424242,
-        name: "outbe_dev",
+        name: "outbe",
         displayName: "Outbe Dev",
         nativeToken: {
             name: "Coen",

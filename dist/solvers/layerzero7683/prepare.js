@@ -1,8 +1,6 @@
-import { BigNumber } from "@ethersproject/bignumber";
 import { bytes32ToAddress } from "@hyperlane-xyz/utils";
-import { ethers } from "ethers";
 import { LayerZero7683__factory } from "../../typechain/factories/layerzero7683/contracts/LayerZero7683__factory.js";
-import { log, getTokenDecimals } from "./utils.js";
+import { log, getTokenDecimals, calculateSolverOutput } from "./utils.js";
 import * as OrderEncoder from "../../lib/OrderEncoder.js";
 import { tradingPairs } from "../../config/index.js";
 class LayerZero7683Prepare {
@@ -68,8 +66,8 @@ class LayerZero7683Prepare {
         const destinationChainName = chainIdsToName[destinationDomainId.toString()];
         const inputToken = bytes32ToAddress(orderData.sender); // Assuming sender is input token address
         const outputToken = bytes32ToAddress(orderData.outputToken);
-        const inputAmount = BigNumber.from(orderData.amountIn);
-        const minOutputAmount = BigNumber.from(orderData.amountOut);
+        const inputAmount = orderData.amountIn;
+        const minOutputAmount = orderData.amountOut;
         // Find trading pair (already validated by checkExchangeRate rule)
         const pair = tradingPairs.find((p) => p.originChain === originChainName &&
             p.destinationChain === destinationChainName &&
@@ -81,27 +79,13 @@ class LayerZero7683Prepare {
         // Get decimals
         const inputDecimals = await getTokenDecimals(inputToken, originChainName, this.multiProvider);
         const outputDecimals = await getTokenDecimals(outputToken, destinationChainName, this.multiProvider);
-        // Calculate market output (all in BigNumber for precision)
-        const RATE_DECIMALS = 18;
-        const exchangeRateBN = ethers.utils.parseUnits(pair.exchangeRate.toString(), RATE_DECIMALS);
-        // Market output: (inputAmount * exchangeRate * 10^outputDecimals) / 10^(inputDecimals + RATE_DECIMALS)
-        const marketOutput = inputAmount
-            .mul(exchangeRateBN)
-            .mul(BigNumber.from(10).pow(outputDecimals))
-            .div(BigNumber.from(10).pow(inputDecimals + RATE_DECIMALS));
-        // Apply quoteBoost to win auction
-        // quoteBoost stored as decimal (e.g., 0.02 = 2%)
-        // Convert to BigNumber: boostedOutput = marketOutput * (1 + quoteBoost)
-        const boostMultiplierBN = ethers.utils.parseUnits((1 + pair.quoteBoost).toString(), RATE_DECIMALS);
-        const boostedOutput = marketOutput
-            .mul(boostMultiplierBN)
-            .div(BigNumber.from(10).pow(RATE_DECIMALS));
+        // Calculate boosted output (market rate + quoteBoost for auction)
+        const boostedOutput = calculateSolverOutput(inputAmount, pair.exchangeRate, inputDecimals, outputDecimals, pair.quoteBoost);
         // Ensure we meet minimum requirement
         const finalOutput = boostedOutput.gt(minOutputAmount) ? boostedOutput : minOutputAmount;
         log.debug({
             msg: "Calculated competitive quote",
             minRequired: minOutputAmount.toString(),
-            marketOutput: marketOutput.toString(),
             boostedOutput: boostedOutput.toString(),
             finalOffering: finalOutput.toString(),
             boostPercent: `${(pair.quoteBoost * 100).toFixed(1)}%`,

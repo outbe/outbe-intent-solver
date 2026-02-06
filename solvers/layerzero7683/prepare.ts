@@ -1,11 +1,10 @@
 import  { BigNumber } from "@ethersproject/bignumber";
 import type { MultiProvider } from "@hyperlane-xyz/sdk";
 import { bytes32ToAddress } from "@hyperlane-xyz/utils";
-import { ethers } from "ethers";
 
 import { LayerZero7683__factory } from "../../typechain/factories/layerzero7683/contracts/LayerZero7683__factory.js";
 import type { OpenEventArgs, IntentData } from "./types.js";
-import { log, getTokenDecimals } from "./utils.js";
+import { log, getTokenDecimals, calculateSolverOutput } from "./utils.js";
 import * as OrderEncoder from "../../lib/OrderEncoder.js";
 import {tradingPairs} from "../../config/index.js";
 
@@ -123,30 +122,14 @@ class LayerZero7683Prepare {
     const inputDecimals = await getTokenDecimals(inputToken, originChainName, this.multiProvider);
     const outputDecimals = await getTokenDecimals(outputToken, destinationChainName, this.multiProvider);
 
-    // Calculate market output (all in BigNumber for precision)
-    const RATE_DECIMALS = 18;
-    const exchangeRateBN = ethers.utils.parseUnits(
-      pair.exchangeRate.toString(),
-      RATE_DECIMALS
+    // Calculate boosted output (market rate + quoteBoost for auction)
+    const boostedOutput = calculateSolverOutput(
+      inputAmount,
+      pair.exchangeRate,
+      inputDecimals,
+      outputDecimals,
+      pair.quoteBoost
     );
-
-    // Market output: (inputAmount * exchangeRate * 10^outputDecimals) / 10^(inputDecimals + RATE_DECIMALS)
-    const marketOutput = inputAmount
-      .mul(exchangeRateBN)
-      .mul(BigNumber.from(10).pow(outputDecimals))
-      .div(BigNumber.from(10).pow(inputDecimals + RATE_DECIMALS));
-
-    // Apply quoteBoost to win auction
-    // quoteBoost stored as decimal (e.g., 0.02 = 2%)
-    // Convert to BigNumber: boostedOutput = marketOutput * (1 + quoteBoost)
-    const boostMultiplierBN = ethers.utils.parseUnits(
-      (1 + pair.quoteBoost).toString(),
-      RATE_DECIMALS
-    );
-
-    const boostedOutput = marketOutput
-      .mul(boostMultiplierBN)
-      .div(BigNumber.from(10).pow(RATE_DECIMALS));
 
     // Ensure we meet minimum requirement
     const finalOutput = boostedOutput.gt(minOutputAmount) ? boostedOutput : minOutputAmount;
@@ -154,7 +137,6 @@ class LayerZero7683Prepare {
     log.debug({
       msg: "Calculated competitive quote",
       minRequired: minOutputAmount.toString(),
-      marketOutput: marketOutput.toString(),
       boostedOutput: boostedOutput.toString(),
       finalOffering: finalOutput.toString(),
       boostPercent: `${(pair.quoteBoost * 100).toFixed(1)}%`,

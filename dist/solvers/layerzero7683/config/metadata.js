@@ -10,7 +10,7 @@ const metadata = {
         },
         {
             address: ROUTER_CONTRACT,
-            chainName: "outbe_dev",
+            chainName: "outbe",
         },
     ],
     customRules: {

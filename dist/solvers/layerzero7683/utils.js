@@ -1,4 +1,6 @@
 import { defaultAbiCoder } from "@ethersproject/abi";
+import { BigNumber } from "@ethersproject/bignumber";
+import { ethers } from "ethers";
 import { createLogger } from "../../logger.js";
 import { metadata } from "./config/index.js";
 export const log = createLogger(metadata.protocolName);
@@ -37,5 +39,34 @@ export async function getTokenDecimals(tokenAddress, chainName, multiProvider) {
     const provider = multiProvider.getProvider(chainName);
     const token = Erc20__factory.connect(tokenAddress, provider);
     return await token.decimals();
+}
+/**
+ * Calculate solver output amount based on exchange rate
+ * All calculations in BigNumber to preserve precision
+ *
+ * @param inputAmount - Input token amount in wei
+ * @param exchangeRate - Exchange rate as decimal (e.g., 0.012)
+ * @param inputDecimals - Input token decimals
+ * @param outputDecimals - Output token decimals
+ * @param quoteBoost - Optional boost multiplier for auction (e.g., 0.02 = 2% more)
+ * @returns Solver output amount in wei (with boost if provided)
+ */
+export function calculateSolverOutput(inputAmount, exchangeRate, inputDecimals, outputDecimals, quoteBoost) {
+    const RATE_DECIMALS = 18; // Ethereum standard precision
+    // Convert exchangeRate to BigNumber with 18 decimals precision
+    const exchangeRateBN = ethers.utils.parseUnits(exchangeRate.toString(), RATE_DECIMALS);
+    // Calculate base output: (inputAmount * exchangeRate * 10^outputDecimals) / 10^(inputDecimals + RATE_DECIMALS)
+    let output = inputAmount
+        .mul(exchangeRateBN)
+        .mul(BigNumber.from(10).pow(outputDecimals))
+        .div(BigNumber.from(10).pow(inputDecimals + RATE_DECIMALS));
+    // Apply boost if provided
+    if (quoteBoost !== undefined && quoteBoost > 0) {
+        const boostMultiplierBN = ethers.utils.parseUnits((1 + quoteBoost).toString(), RATE_DECIMALS);
+        output = output
+            .mul(boostMultiplierBN)
+            .div(BigNumber.from(10).pow(RATE_DECIMALS));
+    }
+    return output;
 }
 //# sourceMappingURL=utils.js.map
