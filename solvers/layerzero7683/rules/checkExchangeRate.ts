@@ -12,7 +12,6 @@ export function checkExchangeRate(): LayerZero7683Rule {
     // Extract order info
 
 
-      console.log('aaaaaaaaaaaaaaaa');
     const originChainId = parsedArgs.resolvedOrder.originChainId.toString();
     const originChainName = chainIdsToName[originChainId];
 

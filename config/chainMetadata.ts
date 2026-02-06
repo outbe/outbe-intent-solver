@@ -7,8 +7,8 @@ import { ProtocolType } from "@hyperlane-xyz/utils";
 const customChainMetadata = {
   outbe: {
     protocol: ProtocolType.Ethereum,
-    chainId: 424243,
-    domainId: 424243,
+    chainId: 424242,
+    domainId: 424242,
     name: "outbe",
     displayName: "Outbe Dev",
     nativeToken: {
