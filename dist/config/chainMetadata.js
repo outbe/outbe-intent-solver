@@ -39,7 +39,7 @@ const customChainMetadata = {
             {
                 http: 'https://bsc-testnet-rpc.publicnode.com',
                 pagination: {
-                    maxBlockRange: 5000,
+                    maxBlockRange: 2000,
                 },
             },
         ],

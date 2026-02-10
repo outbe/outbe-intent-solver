@@ -49,26 +49,7 @@ export abstract class BaseFiller<
       blockNumber: number,
       winningAmount?: any,
     ) => {
-      try {
-        const origin = await this.retrieveOriginInfo(
-          parsedArgs,
-          originChainName,
-        );
-        const target = await this.retrieveTargetInfo(parsedArgs);
 
-        this.log.info({
-          msg: "Intent Indexed",
-          intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
-          origin: origin.join(", "),
-          target: target.join(", "),
-        });
-      } catch (error) {
-        this.log.error({
-          msg: "Failed retrieving origin and target info",
-          intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
-          error: JSON.stringify(error),
-        });
-      }
 
       const intent = await this.prepareIntent(parsedArgs);
 
@@ -93,14 +74,7 @@ export abstract class BaseFiller<
     };
   }
 
-  protected abstract retrieveOriginInfo(
-    parsedArgs: TParsedArgs,
-    chainName: string,
-  ): Promise<Array<string>>;
 
-  protected abstract retrieveTargetInfo(
-    parsedArgs: TParsedArgs,
-  ): Promise<Array<string>>;
 
   protected async prepareIntent(
     parsedArgs: TParsedArgs,

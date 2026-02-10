@@ -54,13 +54,13 @@ export function checkExchangeRate(): LayerZero7683Rule {
       context.multiProvider
     );
 
-    // Calculate solver output with quoteBoost (what we'll actually offer in auction)
+    // Calculate solver output with quoteTolerance (what we'll actually offer in auction)
     const boostedOutput = calculateSolverOutput(
       inputAmount,
       pair.exchangeRate,
       inputDecimals,
       outputDecimals,
-      pair.quoteBoost
+      pair.quoteTolerance
     );
 
     // Check if boosted output meets user's minimum (this is what we'll offer in auction)

@@ -5,7 +5,7 @@ import * as solvers from "./index.js";
 
 type SolverModule = {
   listener: {
-    create: () => Promise<ListenerFn>;
+      create: (multiProvider: MultiProvider) => Promise<ListenerFn>;
   };
   prepare?: {
     create: (
@@ -80,7 +80,7 @@ export class SolverManager {
 
     this.log.info(`Initializing solver: ${name}`);
 
-    const listener = await solver.listener.create();
+    const listener = await solver.listener.create(this.multiProvider);
     const filler = solver.filler.create(this.multiProvider, solver.rules);
 
     // If solver has prepare module, wrap filler with prepare logic

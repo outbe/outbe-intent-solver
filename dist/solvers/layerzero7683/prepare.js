@@ -94,29 +94,22 @@ class LayerZero7683Prepare {
      * Wait for quoting period to end by polling contract
      */
     async waitForQuotingEnd(orderData) {
-        // Get quoting period from contract
-        const quotingPeriodBN = await this.destinationCt.quotingPeriod();
-        const quotingPeriodMs = quotingPeriodBN.toNumber() * 1000;
-        const pollInterval = Math.min(2000, quotingPeriodMs / 5); // Poll 5 times during period, min 2s
-        const maxWaitTime = quotingPeriodMs + 10000; // quoting period + 10s buffer
-        const startTime = Date.now();
+        const pollInterval = 1000; // Check every 1 second
+        const quotingPeriod = await this.destinationCt.quotingPeriod();
         log.info({
             msg: "Waiting for quoting period to end",
-            quotingPeriodSeconds: quotingPeriodBN.toNumber(),
-            pollIntervalMs: pollInterval,
+            quotingPeriodSeconds: quotingPeriod.toNumber(),
         });
-        while (Date.now() - startTime < maxWaitTime) {
+        while (true) {
             const quotingEnded = await this.destinationCt.isQuotingEnded(orderData);
             if (quotingEnded) {
                 log.info({
                     msg: "Quoting period ended",
-                    waitedMs: Date.now() - startTime,
                 });
                 return;
             }
             await new Promise(resolve => setTimeout(resolve, pollInterval));
         }
-        throw new Error(`Quoting period did not end within ${maxWaitTime}ms`);
     }
     /**
      * Check if this solver won the auction

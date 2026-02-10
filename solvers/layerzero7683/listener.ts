@@ -10,14 +10,15 @@ import type { OpenEventArgs, Layerzero7683Metadata } from "./types.js";
 import { log } from "./utils.js";
 import { getLastIndexedBlocks } from "./db.js";
 import { LayerZero7683__factory } from "../../typechain/factories/layerzero7683/contracts/LayerZero7683__factory.js";
+import type {MultiProvider} from "@hyperlane-xyz/sdk";
 
 export class Layerzero7683Listener extends BaseListener<
   LayerZero7683,
   OpenEvent,
   OpenEventArgs
 > {
-  constructor(metadata: Layerzero7683Metadata) {
-    super(LayerZero7683__factory, "Open", metadata, log);
+  constructor(metadata: Layerzero7683Metadata,multiProvider: MultiProvider) {
+    super(LayerZero7683__factory, "Open", metadata, log,multiProvider);
   }
 
   protected override parseEventArgs(
@@ -36,7 +37,9 @@ export class Layerzero7683Listener extends BaseListener<
   }
 }
 
-export const create = async () => {
+export const create = async (
+    multiProvider: MultiProvider,
+) => {
   const { contracts } = metadata;
   const blocksByChain = await getLastIndexedBlocks();
 
@@ -57,7 +60,7 @@ export const create = async () => {
     return contract;
   });
 
-  return new Layerzero7683Listener(metadata).create();
+  return new Layerzero7683Listener(metadata,multiProvider).create();
 };
 
 /**

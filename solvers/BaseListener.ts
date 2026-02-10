@@ -29,6 +29,7 @@ export abstract class BaseListener<
       protocolName: string;
     },
     private readonly log: Logger,
+    private multiProvider: MultiProvider,
   ) {}
 
   private lastProcessedBlocks: Record<string, number> = {};
@@ -56,7 +57,10 @@ export abstract class BaseListener<
         });
       }
 
-      const multiProvider = new MultiProvider(chainMetadata);
+      const multiProvider = this.multiProvider;
+
+
+
 
       this.metadata.contracts.forEach(
         async ({
@@ -68,6 +72,7 @@ export abstract class BaseListener<
           processedIds,
         }) => {
           const provider = multiProvider.getProvider(chainName);
+          const signer = multiProvider.getSigner(chainName);
           const contract = this.contractFactory.connect(address, provider);
           const filter = contract.filters[this.eventName]();
 
@@ -99,7 +104,7 @@ export abstract class BaseListener<
               pollInterval ?? this.defaultPollInterval,
             )
           );
-
+          const solverAddress = await signer.getAddress();
           contract.provider.getNetwork().then((network) => {
             this.log.info({
               msg: "Listener started",
@@ -107,6 +112,7 @@ export abstract class BaseListener<
               protocol: this.metadata.protocolName,
               chainId: network.chainId,
               chainName: chainName,
+                solverAddress
             });
           });
         },

@@ -26,22 +26,7 @@ export async function quoteSettleFee(
   return fee.nativeFee;
 }
 
-/**
- * Decode settlement payload from LayerZero message
- * Returns orderIds array if it's a settlement message, undefined otherwise
- */
-export function decodeSettlePayload(payload: string): string[] | undefined {
-  try {
-    const [isSettle, orderIds] = defaultAbiCoder.decode(
-      ["bool", "bytes32[]", "bytes[]"],
-      payload,
-    ) as [boolean, string[], string[]];
 
-    return isSettle ? orderIds : undefined;
-  } catch {
-    return undefined;
-  }
-}
 
 /**
  * Get token decimals (18 for native, query for ERC20)
@@ -73,7 +58,7 @@ export async function getTokenDecimals(
  * @param exchangeRate - Exchange rate as decimal (e.g., 0.012)
  * @param inputDecimals - Input token decimals
  * @param outputDecimals - Output token decimals
- * @param quoteBoost - Optional boost multiplier for auction (e.g., 0.02 = 2% more)
+ * @param quoteTolerance - Optional boost multiplier for auction (e.g., 0.02 = 2% more)
  * @returns Solver output amount in wei (with boost if provided)
  */
 export function calculateSolverOutput(
@@ -81,7 +66,7 @@ export function calculateSolverOutput(
   exchangeRate: number,
   inputDecimals: number,
   outputDecimals: number,
-  quoteBoost?: number,
+  quoteTolerance?: number,
 ): BigNumber {
   const RATE_DECIMALS = 18; // Ethereum standard precision
 
@@ -98,9 +83,9 @@ export function calculateSolverOutput(
     .div(BigNumber.from(10).pow(inputDecimals + RATE_DECIMALS));
 
   // Apply boost if provided
-  if (quoteBoost !== undefined && quoteBoost > 0) {
+  if (quoteTolerance !== undefined && quoteTolerance > 0) {
     const boostMultiplierBN = ethers.utils.parseUnits(
-      (1 + quoteBoost).toString(),
+      (1 + quoteTolerance).toString(),
       RATE_DECIMALS
     );
     output = output

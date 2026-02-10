@@ -16,12 +16,9 @@ import type {
 } from "./types.js";
 import { log, quoteSettleFee } from "./utils.js";
 
-import { chainIdsToName } from "../../config/index.js";
 import { BaseFiller } from "../BaseFiller.js";
 import { BuildRules, RulesMap } from "../types.js";
 import {
-  retrieveOriginInfo,
-  retrieveTargetInfo,
   retrieveTokenBalance,
 } from "../utils.js";
 import { allowBlockLists, metadata } from "./config/index.js";
@@ -39,36 +36,6 @@ class LayerZero7683Filler extends BaseFiller<
     rules?: BuildRules<LayerZero7683Rule>,
   ) {
     super(multiProvider, allowBlockLists, metadata, log, rules);
-  }
-
-  protected async retrieveOriginInfo(parsedArgs: OpenEventArgs) {
-    const originTokens = parsedArgs.resolvedOrder.minReceived.map(
-      ({ amount, chainId, token }) => {
-        const tokenAddress = bytes32ToAddress(token);
-        const chainName = chainIdsToName[chainId.toString()];
-        return { amount, chainName, tokenAddress };
-      },
-    );
-
-    return retrieveOriginInfo({
-      multiProvider: this.multiProvider,
-      tokens: originTokens,
-    });
-  }
-
-  protected async retrieveTargetInfo(parsedArgs: OpenEventArgs) {
-    const targetTokens = parsedArgs.resolvedOrder.maxSpent.map(
-      ({ amount, chainId, token }) => {
-        const tokenAddress = bytes32ToAddress(token);
-        const chainName = chainIdsToName[chainId.toString()];
-        return { amount, chainName, tokenAddress };
-      },
-    );
-
-    return retrieveTargetInfo({
-      multiProvider: this.multiProvider,
-      tokens: targetTokens,
-    });
   }
 
   protected async prepareIntent(

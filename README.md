@@ -154,7 +154,7 @@ export const tradingPairs: TradingPair[] = [
     inputToken: "0x0000000000000000000000000000000000000000", // Native COEN
     outputToken: "0x0000000000000000000000000000000000000000", // Native BNB
     exchangeRate: 0.0001,  // 1 COEN = 0.0001 BNB
-    quoteBoost: 0.03,      // Offer 3% more to win
+    quoteTolerance: 0.03,      // Offer 3% more to win
   },
 
   // Outbe native COEN → BSC USDC
@@ -164,14 +164,14 @@ export const tradingPairs: TradingPair[] = [
     inputToken: "0x0000000000000000000000000000000000000000",
     outputToken: "0xae878856F2bEb1F716023043daFef50825d21396", // USDC
     exchangeRate: 0.012,   // 1 COEN = 0.012 USDC
-    quoteBoost: 0.02,      // Offer 2% more to win
+    quoteTolerance: 0.02,      // Offer 2% more to win
   },
 ];
 ```
 
 **Parameters**:
 - `exchangeRate`: Exchange rate for the token pair (e.g., 0.0001 means 1 COEN = 0.0001 BNB)
-- `quoteBoost`: Additional % offered during auction to increase winning chances (e.g., 0.02 = 2% more)
+- `quoteTolerance`: Additional % offered during auction to increase winning chances (e.g., 0.02 = 2% more)
 
 **To add new token pairs**: Edit `solver/config/tradingPairs.ts` and add new entries following the format above. Use `0x0000000000000000000000000000000000000000` for native tokens (COEN, BNB, ETH). Restart the solver after changes.
 
@@ -227,7 +227,7 @@ When an order is detected, the solver:
 2. Calculates competitive output amount:
     - Finds matching `TradingPair` from config
     - Calculates market output: `inputAmount * exchangeRate`
-    - Applies boost: `marketOutput * (1 + quoteBoost)`
+    - Applies boost: `marketOutput * (1 + quoteTolerance)`
 3. Submits quote on destination chain via `destination.submitQuote()`
 
 #### Phase 2: Filling Period
@@ -243,7 +243,7 @@ After quoting period ends:
 - **Auction deduplication**: On-chain check via `destination.hasSolverQuoted()`
 - **Dynamic decimals**: Queries token decimals automatically
 - **Order validation**: Checks if solver can fulfill order based on configured exchange rates
-- **Competitive bidding**: Configurable `quoteBoost` per token
+- **Competitive bidding**: Configurable `quoteTolerance` per token
 - **Native token support**: Handles both ERC20 and native tokens (ETH, BNB, COEN)
 
 ### How Trading Pairs Work
@@ -257,14 +257,14 @@ When processing an order:
 
 2. **Quote Calculation** (`calculateBestOutput` in prepare):
     - Base output: `inputAmount * exchangeRate`
-    - Apply boost: `baseOutput * (1 + quoteBoost)`
+    - Apply boost: `baseOutput * (1 + quoteTolerance)`
     - Submit to auction: `max(boostedOutput, userMinimum)`
 
 3. **Example Flow**:
    ```
    User creates order: 100 COEN → wants minimum 1 USDC
 
-   TradingPair: exchangeRate = 0.012, quoteBoost = 0.02
+   TradingPair: exchangeRate = 0.012, quoteTolerance = 0.02
 
    1. Check if solver can fulfill:
       - Solver output: 100 * 0.012 = 1.2 USDC

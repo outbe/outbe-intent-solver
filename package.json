@@ -6,7 +6,8 @@
   "scripts": {
     "solver": "node ./dist/index.js",
     "build": "tsc",
-    "dev": "tsx --watch ./index.ts",
+    "dev": "tsx  ./index.ts",
+    "dev-watch": "tsx --watch ./index.ts",
     "prettier:check": "prettier . --check",
     "prettier:write": "prettier . --write",
     "contracts:typegen": "typechain --node16-modules --target ethers-v5 --out-dir typechain **/contracts/*.json",

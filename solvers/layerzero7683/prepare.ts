@@ -1,12 +1,16 @@
 import  { BigNumber } from "@ethersproject/bignumber";
 import type { MultiProvider } from "@hyperlane-xyz/sdk";
-import { bytes32ToAddress } from "@hyperlane-xyz/utils";
+import {bytes32ToAddress} from "@hyperlane-xyz/utils";
 
 import { LayerZero7683__factory } from "../../typechain/factories/layerzero7683/contracts/LayerZero7683__factory.js";
 import type { OpenEventArgs, IntentData } from "./types.js";
 import { log, getTokenDecimals, calculateSolverOutput } from "./utils.js";
 import * as OrderEncoder from "../../lib/OrderEncoder.js";
-import {tradingPairs} from "../../config/index.js";
+import {chainIdsToName, tradingPairs} from "../../config/index.js";
+import {
+    retrieveOriginInfo,
+    retrieveTargetInfo,
+} from "../utils.js";
 
 class LayerZero7683Prepare {
   private destinationCt!: any;
@@ -80,7 +84,7 @@ class LayerZero7683Prepare {
 
   /**
    * Calculate best output amount for competitive bidding
-   * Uses tradingPairs config to calculate market rate + quoteBoost
+   * Uses tradingPairs config to calculate market rate + quoteTolerance
    */
   private async calculateBestOutput(
     data: IntentData
@@ -118,13 +122,13 @@ class LayerZero7683Prepare {
     const inputDecimals = await getTokenDecimals(inputToken, originChainName, this.multiProvider);
     const outputDecimals = await getTokenDecimals(outputToken, destinationChainName, this.multiProvider);
 
-    // Calculate boosted output (market rate + quoteBoost for auction)
+    // Calculate boosted output (market rate + quoteTolerance for auction)
     const boostedOutput = calculateSolverOutput(
       inputAmount,
       pair.exchangeRate,
       inputDecimals,
       outputDecimals,
-      pair.quoteBoost
+      pair.quoteTolerance
     );
 
     // Ensure we meet minimum requirement
@@ -135,7 +139,7 @@ class LayerZero7683Prepare {
       minRequired: minOutputAmount.toString(),
       boostedOutput: boostedOutput.toString(),
       finalOffering: finalOutput.toString(),
-      boostPercent: `${(pair.quoteBoost * 100).toFixed(1)}%`,
+      boostPercent: `${(pair.quoteTolerance * 100).toFixed(1)}%`,
     });
 
     return finalOutput;
@@ -219,14 +223,46 @@ class LayerZero7683Prepare {
     return winningAmount;
   }
 
+
+    protected async retrieveOriginInfo(parsedArgs: OpenEventArgs) {
+        const originTokens = parsedArgs.resolvedOrder.minReceived.map(
+            ({ amount, chainId, token }) => {
+                const tokenAddress = bytes32ToAddress(token);
+                const chainName = chainIdsToName[chainId.toString()];
+                return { amount, chainName, tokenAddress };
+            },
+        );
+
+        return retrieveOriginInfo({
+            multiProvider: this.multiProvider,
+            tokens: originTokens,
+        });
+    }
+
+    protected async retrieveTargetInfo(parsedArgs: OpenEventArgs) {
+        const targetTokens = parsedArgs.resolvedOrder.maxSpent.map(
+            ({ amount, chainId, token }) => {
+                const tokenAddress = bytes32ToAddress(token);
+                const chainName = chainIdsToName[chainId.toString()];
+                return { amount, chainName, tokenAddress };
+            },
+        );
+
+        return retrieveTargetInfo({
+            multiProvider: this.multiProvider,
+            tokens: targetTokens,
+        });
+    }
+
+
   /**
    * Prepare order for filling - handles auction logic
    * Returns object with shouldFill flag and winningAmount if won
    */
   async prepare(
     parsedArgs: OpenEventArgs,
-    _originChainName: string,
-    _blockNumber: number
+    originChainName: string,
+    blockNumber: number
   ): Promise<{ shouldFill: boolean; winningAmount?: BigNumber }> {
     // Extract intent data
     const data: IntentData = {
@@ -234,9 +270,33 @@ class LayerZero7683Prepare {
       maxSpent: parsedArgs.resolvedOrder.maxSpent,
     };
 
+
+
     // Decode order data to check auction phase
     const originData = data.fillInstructions[0].originData;
     const orderData = OrderEncoder.decode(originData);
+
+      try {
+          const origin = await this.retrieveOriginInfo(
+              parsedArgs,
+          );
+          const target = await this.retrieveTargetInfo(parsedArgs);
+
+          log.info({
+              msg: "Intent Indexed",
+              intent: `${parsedArgs.orderId}`,
+              origin: origin.join(", "),
+              target: target.join(", "),
+          });
+      } catch (error) {
+          log.error({
+              msg: "Failed retrieving origin and target info",
+              intent: `${parsedArgs.orderId}`,
+              error: JSON.stringify(error),
+          });
+      }
+
+
 
     // Setup destination contract (reused across all methods)
     const destinationSettler = bytes32ToAddress(

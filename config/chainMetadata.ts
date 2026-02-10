@@ -40,9 +40,9 @@ const customChainMetadata: ChainMap<ChainMetadata> = {
     },
     rpcUrls: [
       {
-        http: 'https://bsc-testnet-rpc.publicnode.com',
+        http: 'https://data-seed-prebsc-2-s1.bnbchain.org:8545',
         pagination: {
-          maxBlockRange: 5000,
+          maxBlockRange: 2000,
         },
       },
     ],
