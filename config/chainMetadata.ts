@@ -40,7 +40,7 @@ const customChainMetadata: ChainMap<ChainMetadata> = {
     },
     rpcUrls: [
       {
-        http: 'https://data-seed-prebsc-2-s1.bnbchain.org:8545',
+        http: 'https://97.rpc.thirdweb.com/34f11a24bb8f2c2d5586f38df502f6a1',
         pagination: {
           maxBlockRange: 2000,
         },

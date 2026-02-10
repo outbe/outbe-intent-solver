@@ -79,10 +79,10 @@ export abstract class BaseFiller<
   protected async prepareIntent(
     parsedArgs: TParsedArgs,
   ): Promise<Result<TIntentData>> {
-    this.log.info({
-      msg: "Evaluating filling Intent",
-      intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
-    });
+    // this.log.info({
+    //   msg: "Evaluating filling Intent",
+    //   intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
+    // });
 
     const { senderAddress, recipients } = parsedArgs;
 

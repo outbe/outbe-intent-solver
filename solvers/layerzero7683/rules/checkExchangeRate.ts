@@ -33,7 +33,6 @@ export function checkExchangeRate(): LayerZero7683Rule {
         p.outputToken.toLowerCase() === outputToken.toLowerCase()
     );
 
-    console.log(pair);
 
     if (!pair) {
       return {
