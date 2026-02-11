@@ -9,6 +9,7 @@ types
 coverage
 node_modules
 out
+dist
 
 # IDE
 .idea
