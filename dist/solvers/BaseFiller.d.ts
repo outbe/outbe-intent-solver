@@ -20,8 +20,6 @@ export declare abstract class BaseFiller<TMetadata extends BaseMetadata, TParsed
     rules: Array<BaseRule<TMetadata, TParsedArgs, TIntentData>>;
     protected constructor(multiProvider: MultiProvider, allowBlockLists: GenericAllowBlockLists, metadata: TMetadata, log: Logger, rulesConfig?: BuildRules<BaseRule<TMetadata, TParsedArgs, TIntentData>>);
     create(): (parsedArgs: TParsedArgs, originChainName: string, blockNumber: number, winningAmount?: any) => Promise<void>;
-    protected abstract retrieveOriginInfo(parsedArgs: TParsedArgs, chainName: string): Promise<Array<string>>;
-    protected abstract retrieveTargetInfo(parsedArgs: TParsedArgs): Promise<Array<string>>;
     protected prepareIntent(parsedArgs: TParsedArgs): Promise<Result<TIntentData>>;
     protected evaluateRules(parsedArgs: TParsedArgs): Promise<Result<string>>;
     protected abstract fill(parsedArgs: TParsedArgs, data: TIntentData, originChainName: string, blockNumber: number, winningAmount?: any): Promise<void>;

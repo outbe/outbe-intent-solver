@@ -1,38 +1,14 @@
-import { AddressZero, MaxUint256, Zero } from "@ethersproject/constants";
+import { AddressZero, MaxUint256 } from "@ethersproject/constants";
 import { addressToBytes32, bytes32ToAddress, } from "@hyperlane-xyz/utils";
 import { Erc20__factory } from "../../typechain/factories/contracts/Erc20__factory.js";
 import { LayerZero7683__factory } from "../../typechain/factories/layerzero7683/contracts/LayerZero7683__factory.js";
 import { log, quoteSettleFee } from "./utils.js";
-import { chainIdsToName } from "../../config/index.js";
 import { BaseFiller } from "../BaseFiller.js";
-import { retrieveOriginInfo, retrieveTargetInfo, retrieveTokenBalance, } from "../utils.js";
 import { allowBlockLists, metadata } from "./config/index.js";
 import { saveBlockNumber } from "./db.js";
 class LayerZero7683Filler extends BaseFiller {
-    constructor(multiProvider, rules) {
-        super(multiProvider, allowBlockLists, metadata, log, rules);
-    }
-    async retrieveOriginInfo(parsedArgs) {
-        const originTokens = parsedArgs.resolvedOrder.minReceived.map(({ amount, chainId, token }) => {
-            const tokenAddress = bytes32ToAddress(token);
-            const chainName = chainIdsToName[chainId.toString()];
-            return { amount, chainName, tokenAddress };
-        });
-        return retrieveOriginInfo({
-            multiProvider: this.multiProvider,
-            tokens: originTokens,
-        });
-    }
-    async retrieveTargetInfo(parsedArgs) {
-        const targetTokens = parsedArgs.resolvedOrder.maxSpent.map(({ amount, chainId, token }) => {
-            const tokenAddress = bytes32ToAddress(token);
-            const chainName = chainIdsToName[chainId.toString()];
-            return { amount, chainName, tokenAddress };
-        });
-        return retrieveTargetInfo({
-            multiProvider: this.multiProvider,
-            tokens: targetTokens,
-        });
+    constructor(multiProvider) {
+        super(multiProvider, allowBlockLists, metadata, log);
     }
     async prepareIntent(parsedArgs) {
         const { fillInstructions, maxSpent } = parsedArgs.resolvedOrder;
@@ -169,36 +145,7 @@ class LayerZero7683Filler extends BaseFiller {
         }));
     }
 }
-const enoughBalanceOnDestination = async (parsedArgs, context) => {
-    const amountByTokenByChain = parsedArgs.resolvedOrder.maxSpent.reduce((acc, { token, ...output }) => {
-        token = bytes32ToAddress(token);
-        const chainId = output.chainId.toNumber();
-        acc[chainId] ||= { [token]: Zero };
-        acc[chainId][token] ||= Zero;
-        acc[chainId][token] = acc[chainId][token].add(output.amount);
-        return acc;
-    }, {});
-    for (const chainId in amountByTokenByChain) {
-        const chainTokens = amountByTokenByChain[chainId];
-        const fillerAddress = await context.multiProvider.getSignerAddress(chainId);
-        const provider = context.multiProvider.getProvider(chainId);
-        for (const tokenAddress in chainTokens) {
-            const amount = chainTokens[tokenAddress];
-            const balance = await retrieveTokenBalance(tokenAddress, fillerAddress, provider);
-            if (balance.lt(amount)) {
-                return {
-                    error: `Insufficient balance on destination chain ${chainId}, for ${tokenAddress}`,
-                    success: false,
-                };
-            }
-        }
-    }
-    return { data: "Enough tokens to fulfill the intent", success: true };
-};
-export const create = (multiProvider, customRules) => {
-    return new LayerZero7683Filler(multiProvider, {
-        base: [enoughBalanceOnDestination],
-        custom: customRules,
-    }).create();
+export const create = (multiProvider) => {
+    return new LayerZero7683Filler(multiProvider).create();
 };
 //# sourceMappingURL=filler.js.map

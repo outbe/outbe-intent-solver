@@ -1,5 +1,5 @@
 import { BigNumber } from "@ethersproject/bignumber";
-import { AddressZero, MaxUint256, Zero } from "@ethersproject/constants";
+import { AddressZero, MaxUint256 } from "@ethersproject/constants";
 import type { MultiProvider } from "@hyperlane-xyz/sdk";
 import {
   addressToBytes32,
@@ -17,25 +17,16 @@ import type {
 import { log, quoteSettleFee } from "./utils.js";
 
 import { BaseFiller } from "../BaseFiller.js";
-import { BuildRules, RulesMap } from "../types.js";
-import {
-  retrieveTokenBalance,
-} from "../utils.js";
 import { allowBlockLists, metadata } from "./config/index.js";
 import { saveBlockNumber } from "./db.js";
-
-export type LayerZero7683Rule = LayerZero7683Filler["rules"][number];
 
 class LayerZero7683Filler extends BaseFiller<
   Layerzero7683Metadata,
   OpenEventArgs,
   IntentData
 > {
-  constructor(
-    multiProvider: MultiProvider,
-    rules?: BuildRules<LayerZero7683Rule>,
-  ) {
-    super(multiProvider, allowBlockLists, metadata, log, rules);
+  constructor(multiProvider: MultiProvider) {
+    super(multiProvider, allowBlockLists, metadata, log);
   }
 
   protected async prepareIntent(
@@ -256,55 +247,6 @@ class LayerZero7683Filler extends BaseFiller<
   }
 }
 
-const enoughBalanceOnDestination: LayerZero7683Rule = async (
-  parsedArgs,
-  context,
-) => {
-  const amountByTokenByChain = parsedArgs.resolvedOrder.maxSpent.reduce<{
-    [chainId: number]: { [token: string]: BigNumber };
-  }>((acc, { token, ...output }) => {
-    token = bytes32ToAddress(token);
-    const chainId = output.chainId.toNumber();
-
-    acc[chainId] ||= { [token]: Zero };
-    acc[chainId][token] ||= Zero;
-
-    acc[chainId][token] = acc[chainId][token].add(output.amount);
-
-    return acc;
-  }, {});
-
-  for (const chainId in amountByTokenByChain) {
-    const chainTokens = amountByTokenByChain[chainId];
-    const fillerAddress = await context.multiProvider.getSignerAddress(chainId);
-    const provider = context.multiProvider.getProvider(chainId);
-
-    for (const tokenAddress in chainTokens) {
-      const amount = chainTokens[tokenAddress];
-      const balance = await retrieveTokenBalance(
-        tokenAddress,
-        fillerAddress,
-        provider,
-      );
-
-      if (balance.lt(amount)) {
-        return {
-          error: `Insufficient balance on destination chain ${chainId}, for ${tokenAddress}`,
-          success: false,
-        };
-      }
-    }
-  }
-
-  return { data: "Enough tokens to fulfill the intent", success: true };
-};
-
-export const create = (
-  multiProvider: MultiProvider,
-  customRules?: RulesMap<LayerZero7683Rule>,
-) => {
-  return new LayerZero7683Filler(multiProvider, {
-    base: [enoughBalanceOnDestination],
-    custom: customRules,
-  }).create();
+export const create = (multiProvider: MultiProvider) => {
+  return new LayerZero7683Filler(multiProvider).create();
 };

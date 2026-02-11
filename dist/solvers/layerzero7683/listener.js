@@ -5,8 +5,8 @@ import { log } from "./utils.js";
 import { getLastIndexedBlocks } from "./db.js";
 import { LayerZero7683__factory } from "../../typechain/factories/layerzero7683/contracts/LayerZero7683__factory.js";
 export class Layerzero7683Listener extends BaseListener {
-    constructor(metadata) {
-        super(LayerZero7683__factory, "Open", metadata, log);
+    constructor(metadata, multiProvider) {
+        super(LayerZero7683__factory, "Open", metadata, log, multiProvider);
     }
     parseEventArgs(args) {
         const [orderId, resolvedOrder] = args;
@@ -21,7 +21,7 @@ export class Layerzero7683Listener extends BaseListener {
         };
     }
 }
-export const create = async () => {
+export const create = async (multiProvider) => {
     const { contracts } = metadata;
     const blocksByChain = await getLastIndexedBlocks();
     metadata.contracts = contracts.map((contract) => {
@@ -36,7 +36,7 @@ export const create = async () => {
         }
         return contract;
     });
-    return new Layerzero7683Listener(metadata).create();
+    return new Layerzero7683Listener(metadata, multiProvider).create();
 };
 /**
  * Listen for MessageReceived events to track settlement delivery

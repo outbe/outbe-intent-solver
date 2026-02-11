@@ -21,7 +21,6 @@ export function checkExchangeRate() {
             p.destinationChain === destinationChainName &&
             p.inputToken.toLowerCase() === inputToken.toLowerCase() &&
             p.outputToken.toLowerCase() === outputToken.toLowerCase());
-        console.log(pair);
         if (!pair) {
             return {
                 success: false,
@@ -31,8 +30,8 @@ export function checkExchangeRate() {
         // Get token decimals dynamically
         const inputDecimals = await getTokenDecimals(inputToken, originChainName, context.multiProvider);
         const outputDecimals = await getTokenDecimals(outputToken, destinationChainName, context.multiProvider);
-        // Calculate solver output with quoteBoost (what we'll actually offer in auction)
-        const boostedOutput = calculateSolverOutput(inputAmount, pair.exchangeRate, inputDecimals, outputDecimals, pair.quoteBoost);
+        // Calculate solver output with quoteTolerance (what we'll actually offer in auction)
+        const boostedOutput = calculateSolverOutput(inputAmount, pair.exchangeRate, inputDecimals, outputDecimals, pair.quoteTolerance);
         // Check if boosted output meets user's minimum (this is what we'll offer in auction)
         if (boostedOutput.lt(minOutputAmount)) {
             return {

@@ -2,7 +2,7 @@ import { HashZero } from "@ethersproject/constants";
 import { bytes32ToAddress } from "@hyperlane-xyz/utils";
 
 import { LayerZero7683__factory } from "../../../typechain/factories/layerzero7683/contracts/LayerZero7683__factory.js";
-import { LayerZero7683Rule } from "../filler.js";
+import { LayerZero7683Rule } from "../prepare.js";
 
 const UNKNOWN = HashZero;
 

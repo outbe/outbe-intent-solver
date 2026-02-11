@@ -1,4 +1,5 @@
 import type { Provider } from "@ethersproject/providers";
+import { MultiProvider } from "@hyperlane-xyz/sdk";
 import type { Contract, EventFilter, Signer } from "ethers";
 import type { Logger } from "../logger.js";
 import type { TypedEvent, TypedListener } from "../typechain/common.js";
@@ -8,6 +9,7 @@ export declare abstract class BaseListener<TContract extends Contract, TEvent ex
     private readonly eventName;
     private readonly metadata;
     private readonly log;
+    private multiProvider;
     protected constructor(contractFactory: {
         connect(address: string, signerOrProvider: Signer | Provider): TContract;
     }, eventName: Extract<keyof TContract["filters"], string>, metadata: {
@@ -20,7 +22,7 @@ export declare abstract class BaseListener<TContract extends Contract, TEvent ex
             processedIds?: string[];
         }>;
         protocolName: string;
-    }, log: Logger);
+    }, log: Logger, multiProvider: MultiProvider);
     private lastProcessedBlocks;
     private defaultPollInterval;
     private defaultMaxBlockRange;

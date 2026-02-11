@@ -29,11 +29,12 @@ export class SolverManager {
             throw new Error(`Solver ${name} not found`);
         }
         this.log.info(`Initializing solver: ${name}`);
-        const listener = await solver.listener.create();
-        const filler = solver.filler.create(this.multiProvider, solver.rules);
+        const listener = await solver.listener.create(this.multiProvider);
         // If solver has prepare module, wrap filler with prepare logic
+        // Rules are passed to prepare, not filler
         if (solver.prepare) {
             const prepare = solver.prepare.create(this.multiProvider, solver.rules);
+            const filler = solver.filler.create(this.multiProvider);
             const wrappedHandler = async (args, originChainName, blockNumber) => {
                 const result = await prepare(args, originChainName, blockNumber);
                 if (result.shouldFill) {
@@ -43,6 +44,8 @@ export class SolverManager {
             this.activeListeners.push(listener(wrappedHandler));
         }
         else {
+            // For solvers without prepare, rules are passed to filler
+            const filler = solver.filler.create(this.multiProvider, solver.rules);
             this.activeListeners.push(listener(filler));
         }
     }

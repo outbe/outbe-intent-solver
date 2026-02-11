@@ -1,14 +1,17 @@
+import { formatUnits } from "@ethersproject/units";
 import { bytes32ToAddress } from "@hyperlane-xyz/utils";
 import { LayerZero7683__factory } from "../../typechain/factories/layerzero7683/contracts/LayerZero7683__factory.js";
 import { log, getTokenDecimals, calculateSolverOutput } from "./utils.js";
 import * as OrderEncoder from "../../lib/OrderEncoder.js";
-import { tradingPairs } from "../../config/index.js";
-class LayerZero7683Prepare {
-    multiProvider;
+import { chainIdsToName, tradingPairs } from "../../config/index.js";
+import { retrieveOriginInfo, retrieveTargetInfo, } from "../utils.js";
+import { BasePrepare } from "../BasePrepare.js";
+import { metadata } from "./config/index.js";
+class LayerZero7683Prepare extends BasePrepare {
     destinationCt;
     destinationSigner;
-    constructor(multiProvider) {
-        this.multiProvider = multiProvider;
+    constructor(multiProvider, rules) {
+        super(multiProvider, metadata, log, rules);
     }
     /**
      * Submit quote during auction period
@@ -51,7 +54,7 @@ class LayerZero7683Prepare {
     }
     /**
      * Calculate best output amount for competitive bidding
-     * Uses tradingPairs config to calculate market rate + quoteBoost
+     * Uses tradingPairs config to calculate market rate + quoteTolerance
      */
     async calculateBestOutput(data) {
         const originData = data.fillInstructions[0].originData;
@@ -77,8 +80,8 @@ class LayerZero7683Prepare {
         // Get decimals
         const inputDecimals = await getTokenDecimals(inputToken, originChainName, this.multiProvider);
         const outputDecimals = await getTokenDecimals(outputToken, destinationChainName, this.multiProvider);
-        // Calculate boosted output (market rate + quoteBoost for auction)
-        const boostedOutput = calculateSolverOutput(inputAmount, pair.exchangeRate, inputDecimals, outputDecimals, pair.quoteBoost);
+        // Calculate boosted output (market rate + quoteTolerance for auction)
+        const boostedOutput = calculateSolverOutput(inputAmount, pair.exchangeRate, inputDecimals, outputDecimals, pair.quoteTolerance);
         // Ensure we meet minimum requirement
         const finalOutput = boostedOutput.gt(minOutputAmount) ? boostedOutput : minOutputAmount;
         log.debug({
@@ -86,7 +89,7 @@ class LayerZero7683Prepare {
             minRequired: minOutputAmount.toString(),
             boostedOutput: boostedOutput.toString(),
             finalOffering: finalOutput.toString(),
-            boostPercent: `${(pair.quoteBoost * 100).toFixed(1)}%`,
+            boostPercent: `${(pair.quoteTolerance * 100).toFixed(1)}%`,
         });
         return finalOutput;
     }
@@ -131,27 +134,53 @@ class LayerZero7683Prepare {
         // Get winner from contract
         const [winnerAddress, winningAmount] = await this.destinationCt.getWinner(parsedArgs.orderId, orderData);
         const isWinner = winnerAddress.toLowerCase() === fillerAddress.toLowerCase();
+        // Get network and token info for logging
+        const destinationChainName = chainIdsToName[orderData.destinationDomain.toString()];
+        const outputToken = bytes32ToAddress(orderData.outputToken);
+        const outputDecimals = await getTokenDecimals(outputToken, destinationChainName, this.multiProvider);
+        const formattedAmount = formatUnits(winningAmount, outputDecimals);
+        const msg = {
+            msg: isWinner ? "Won auction" : "Not the auction winner",
+            orderId: parsedArgs.orderId,
+            winner: winnerAddress,
+            network: destinationChainName,
+            decimals: outputDecimals,
+            winningAmount: winningAmount.toString(),
+            formattedAmount: formattedAmount,
+        };
+        log.info(msg);
         if (!isWinner) {
-            log.info({
-                msg: "Not the auction winner",
-                orderId: parsedArgs.orderId,
-                winner: winnerAddress,
-                winningAmount: winningAmount.toString(),
-            });
             return undefined;
         }
-        log.info({
-            msg: "Won auction - ready to fill",
-            orderId: parsedArgs.orderId,
-            winningAmount: winningAmount.toString(),
-        });
         return winningAmount;
+    }
+    async retrieveOriginInfo(parsedArgs) {
+        const originTokens = parsedArgs.resolvedOrder.minReceived.map(({ amount, chainId, token }) => {
+            const tokenAddress = bytes32ToAddress(token);
+            const chainName = chainIdsToName[chainId.toString()];
+            return { amount, chainName, tokenAddress };
+        });
+        return retrieveOriginInfo({
+            multiProvider: this.multiProvider,
+            tokens: originTokens,
+        });
+    }
+    async retrieveTargetInfo(parsedArgs) {
+        const targetTokens = parsedArgs.resolvedOrder.maxSpent.map(({ amount, chainId, token }) => {
+            const tokenAddress = bytes32ToAddress(token);
+            const chainName = chainIdsToName[chainId.toString()];
+            return { amount, chainName, tokenAddress };
+        });
+        return retrieveTargetInfo({
+            multiProvider: this.multiProvider,
+            tokens: targetTokens,
+        });
     }
     /**
      * Prepare order for filling - handles auction logic
      * Returns object with shouldFill flag and winningAmount if won
      */
-    async prepare(parsedArgs, _originChainName, _blockNumber) {
+    async prepare(parsedArgs, originChainName, blockNumber) {
         // Extract intent data
         const data = {
             fillInstructions: parsedArgs.resolvedOrder.fillInstructions,
@@ -160,6 +189,23 @@ class LayerZero7683Prepare {
         // Decode order data to check auction phase
         const originData = data.fillInstructions[0].originData;
         const orderData = OrderEncoder.decode(originData);
+        try {
+            const origin = await this.retrieveOriginInfo(parsedArgs);
+            const target = await this.retrieveTargetInfo(parsedArgs);
+            log.info({
+                msg: "Intent Indexed",
+                intent: `${parsedArgs.orderId}`,
+                origin: origin.join(", "),
+                target: target.join(", "),
+            });
+        }
+        catch (error) {
+            log.error({
+                msg: "Failed retrieving origin and target info",
+                intent: `${parsedArgs.orderId}`,
+                error: JSON.stringify(error),
+            });
+        }
         // Setup destination contract (reused across all methods)
         const destinationSettler = bytes32ToAddress(data.fillInstructions[0].destinationSettler);
         const _chainId = data.fillInstructions[0].destinationChainId.toString();
@@ -177,18 +223,13 @@ class LayerZero7683Prepare {
         else {
             // QUOTING PHASE: Submit quote and wait for period to end
             log.info({
-                msg: "Quoting phase active - submitting quote",
+                msg: "Quoting phase active",
                 orderId: parsedArgs.orderId,
             });
             await this.submitQuote(parsedArgs, data);
             // Wait for quoting period to end
             await this.waitForQuotingEnd(orderData);
         }
-        // FILLING PHASE: Check if we won the auction
-        log.info({
-            msg: "Filling phase - checking auction winner",
-            orderId: parsedArgs.orderId,
-        });
         const winningAmount = await this.isWinner(parsedArgs, data);
         if (winningAmount) {
             return { shouldFill: true, winningAmount };
@@ -197,11 +238,11 @@ class LayerZero7683Prepare {
             return { shouldFill: false };
         }
     }
-    create() {
-        return (args, originChainName, blockNumber) => this.prepare(args, originChainName, blockNumber);
-    }
 }
-export const create = (multiProvider) => {
-    return new LayerZero7683Prepare(multiProvider).create();
+export const create = (multiProvider, customRules) => {
+    return new LayerZero7683Prepare(multiProvider, {
+        base: [],
+        custom: customRules,
+    }).create();
 };
 //# sourceMappingURL=prepare.js.map

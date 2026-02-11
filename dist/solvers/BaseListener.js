@@ -1,15 +1,16 @@
-import { MultiProvider } from "@hyperlane-xyz/sdk";
 import { chainMetadata } from "../config/chainMetadata.js";
 export class BaseListener {
     contractFactory;
     eventName;
     metadata;
     log;
-    constructor(contractFactory, eventName, metadata, log) {
+    multiProvider;
+    constructor(contractFactory, eventName, metadata, log, multiProvider) {
         this.contractFactory = contractFactory;
         this.eventName = eventName;
         this.metadata = metadata;
         this.log = log;
+        this.multiProvider = multiProvider;
     }
     lastProcessedBlocks = {};
     defaultPollInterval = 3000; // 3 seconds
@@ -25,9 +26,10 @@ export class BaseListener {
                     return rpc;
                 });
             }
-            const multiProvider = new MultiProvider(chainMetadata);
+            const multiProvider = this.multiProvider;
             this.metadata.contracts.forEach(async ({ address, chainName, pollInterval, confirmationBlocks, initialBlock, processedIds, }) => {
                 const provider = multiProvider.getProvider(chainName);
+                const signer = multiProvider.getSigner(chainName);
                 const contract = this.contractFactory.connect(address, provider);
                 const filter = contract.filters[this.eventName]();
                 const latest = await provider.getBlockNumber();
@@ -36,6 +38,7 @@ export class BaseListener {
                     this.processPrevBlocks(chainName, contract, filter, initialBlock, latest - 1, handler, processedIds);
                 }
                 this.pollIntervals.push(setInterval(() => this.pollEvents(chainName, contract, filter, handler, confirmationBlocks), pollInterval ?? this.defaultPollInterval));
+                const solverAddress = await signer.getAddress();
                 contract.provider.getNetwork().then((network) => {
                     this.log.info({
                         msg: "Listener started",
@@ -43,6 +46,7 @@ export class BaseListener {
                         protocol: this.metadata.protocolName,
                         chainId: network.chainId,
                         chainName: chainName,
+                        solverAddress
                     });
                 });
             });

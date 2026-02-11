@@ -8,7 +8,7 @@ export interface TradingPair {
     inputToken: string;
     outputToken: string;
     exchangeRate: number;
-    quoteBoost: number;
+    quoteTolerance: number;
 }
 export declare const tradingPairs: TradingPair[];
 //# sourceMappingURL=tradingPairs.d.ts.map

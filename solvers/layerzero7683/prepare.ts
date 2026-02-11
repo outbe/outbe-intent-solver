@@ -4,7 +4,7 @@ import type {MultiProvider} from "@hyperlane-xyz/sdk";
 import {bytes32ToAddress} from "@hyperlane-xyz/utils";
 
 import {LayerZero7683__factory} from "../../typechain/factories/layerzero7683/contracts/LayerZero7683__factory.js";
-import type {OpenEventArgs, IntentData} from "./types.js";
+import type {OpenEventArgs, IntentData, Layerzero7683Metadata} from "./types.js";
 import {log, getTokenDecimals, calculateSolverOutput} from "./utils.js";
 import * as OrderEncoder from "../../lib/OrderEncoder.js";
 import {chainIdsToName, tradingPairs} from "../../config/index.js";
@@ -12,12 +12,25 @@ import {
     retrieveOriginInfo,
     retrieveTargetInfo,
 } from "../utils.js";
+import {BasePrepare, type BaseRule} from "../BasePrepare.js";
+import type {BuildRules, RulesMap} from "../types.js";
+import {metadata} from "./config/index.js";
 
-class LayerZero7683Prepare {
+export type LayerZero7683Rule = BaseRule<Layerzero7683Metadata, OpenEventArgs, IntentData>;
+
+class LayerZero7683Prepare extends BasePrepare<
+    Layerzero7683Metadata,
+    OpenEventArgs,
+    IntentData
+> {
     private destinationCt!: any;
     private destinationSigner!: any;
 
-    constructor(private multiProvider: MultiProvider) {
+    constructor(
+        multiProvider: MultiProvider,
+        rules?: BuildRules<LayerZero7683Rule>,
+    ) {
+        super(multiProvider, metadata, log, rules);
     }
 
     /**
@@ -266,7 +279,7 @@ class LayerZero7683Prepare {
      * Prepare order for filling - handles auction logic
      * Returns object with shouldFill flag and winningAmount if won
      */
-    async prepare(
+    protected async prepare(
         parsedArgs: OpenEventArgs,
         originChainName: string,
         blockNumber: number
@@ -346,12 +359,14 @@ class LayerZero7683Prepare {
         }
     }
 
-    create() {
-        return (args: OpenEventArgs, originChainName: string, blockNumber: number) =>
-            this.prepare(args, originChainName, blockNumber);
-    }
 }
 
-export const create = (multiProvider: MultiProvider) => {
-    return new LayerZero7683Prepare(multiProvider).create();
+export const create = (
+    multiProvider: MultiProvider,
+    customRules?: RulesMap<LayerZero7683Rule>,
+) => {
+    return new LayerZero7683Prepare(multiProvider, {
+        base: [],
+        custom: customRules,
+    }).create();
 };

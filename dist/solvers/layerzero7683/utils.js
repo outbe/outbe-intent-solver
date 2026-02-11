@@ -14,19 +14,6 @@ export async function quoteSettleFee(destination, originChainId, orderId, filler
     return fee.nativeFee;
 }
 /**
- * Decode settlement payload from LayerZero message
- * Returns orderIds array if it's a settlement message, undefined otherwise
- */
-export function decodeSettlePayload(payload) {
-    try {
-        const [isSettle, orderIds] = defaultAbiCoder.decode(["bool", "bytes32[]", "bytes[]"], payload);
-        return isSettle ? orderIds : undefined;
-    }
-    catch {
-        return undefined;
-    }
-}
-/**
  * Get token decimals (18 for native, query for ERC20)
  */
 export async function getTokenDecimals(tokenAddress, chainName, multiProvider) {
@@ -48,10 +35,10 @@ export async function getTokenDecimals(tokenAddress, chainName, multiProvider) {
  * @param exchangeRate - Exchange rate as decimal (e.g., 0.012)
  * @param inputDecimals - Input token decimals
  * @param outputDecimals - Output token decimals
- * @param quoteBoost - Optional boost multiplier for auction (e.g., 0.02 = 2% more)
+ * @param quoteTolerance - Optional boost multiplier for auction (e.g., 0.02 = 2% more)
  * @returns Solver output amount in wei (with boost if provided)
  */
-export function calculateSolverOutput(inputAmount, exchangeRate, inputDecimals, outputDecimals, quoteBoost) {
+export function calculateSolverOutput(inputAmount, exchangeRate, inputDecimals, outputDecimals, quoteTolerance) {
     const RATE_DECIMALS = 18; // Ethereum standard precision
     // Convert exchangeRate to BigNumber with 18 decimals precision
     const exchangeRateBN = ethers.utils.parseUnits(exchangeRate.toString(), RATE_DECIMALS);
@@ -61,8 +48,8 @@ export function calculateSolverOutput(inputAmount, exchangeRate, inputDecimals, 
         .mul(BigNumber.from(10).pow(outputDecimals))
         .div(BigNumber.from(10).pow(inputDecimals + RATE_DECIMALS));
     // Apply boost if provided
-    if (quoteBoost !== undefined && quoteBoost > 0) {
-        const boostMultiplierBN = ethers.utils.parseUnits((1 + quoteBoost).toString(), RATE_DECIMALS);
+    if (quoteTolerance !== undefined && quoteTolerance > 0) {
+        const boostMultiplierBN = ethers.utils.parseUnits((1 + quoteTolerance).toString(), RATE_DECIMALS);
         output = output
             .mul(boostMultiplierBN)
             .div(BigNumber.from(10).pow(RATE_DECIMALS));

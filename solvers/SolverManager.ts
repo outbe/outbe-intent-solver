@@ -74,6 +74,7 @@ export class SolverManager {
 
   private async initializeSolver(name: SolverName) {
     const solver = solvers[name as keyof typeof solvers] as SolverModule;
+
     if (!solver) {
       throw new Error(`Solver ${name} not found`);
     }
@@ -81,11 +82,12 @@ export class SolverManager {
     this.log.info(`Initializing solver: ${name}`);
 
     const listener = await solver.listener.create(this.multiProvider);
-    const filler = solver.filler.create(this.multiProvider, solver.rules);
 
     // If solver has prepare module, wrap filler with prepare logic
+    // Rules are passed to prepare, not filler
     if (solver.prepare) {
       const prepare = solver.prepare.create(this.multiProvider, solver.rules);
+      const filler = solver.filler.create(this.multiProvider);
       const wrappedHandler = async (
         args: any,
         originChainName: string,
@@ -98,6 +100,8 @@ export class SolverManager {
       };
       this.activeListeners.push(listener(wrappedHandler));
     } else {
+      // For solvers without prepare, rules are passed to filler
+      const filler = solver.filler.create(this.multiProvider, solver.rules);
       this.activeListeners.push(listener(filler));
     }
   }

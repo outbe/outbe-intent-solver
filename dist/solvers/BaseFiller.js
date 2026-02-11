@@ -15,23 +15,6 @@ export class BaseFiller {
     }
     create() {
         return async (parsedArgs, originChainName, blockNumber, winningAmount) => {
-            try {
-                const origin = await this.retrieveOriginInfo(parsedArgs, originChainName);
-                const target = await this.retrieveTargetInfo(parsedArgs);
-                this.log.info({
-                    msg: "Intent Indexed",
-                    intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
-                    origin: origin.join(", "),
-                    target: target.join(", "),
-                });
-            }
-            catch (error) {
-                this.log.error({
-                    msg: "Failed retrieving origin and target info",
-                    intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
-                    error: JSON.stringify(error),
-                });
-            }
             const intent = await this.prepareIntent(parsedArgs);
             if (!intent.success) {
                 this.log.error(`Failed evaluating filling Intent: ${intent.error}`);
@@ -52,10 +35,10 @@ export class BaseFiller {
         };
     }
     async prepareIntent(parsedArgs) {
-        this.log.info({
-            msg: "Evaluating filling Intent",
-            intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
-        });
+        // this.log.info({
+        //   msg: "Evaluating filling Intent",
+        //   intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
+        // });
         const { senderAddress, recipients } = parsedArgs;
         if (!this.isAllowedIntent({ senderAddress, recipients })) {
             throw new Error("Not allowed intent");

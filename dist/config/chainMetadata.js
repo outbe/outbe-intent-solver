@@ -37,7 +37,7 @@ const customChainMetadata = {
         },
         rpcUrls: [
             {
-                http: 'https://bsc-testnet-rpc.publicnode.com',
+                http: 'https://97.rpc.thirdweb.com/34f11a24bb8f2c2d5586f38df502f6a1',
                 pagination: {
                     maxBlockRange: 2000,
                 },
