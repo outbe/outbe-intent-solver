@@ -5,7 +5,7 @@ import {
   isAllowedIntent,
 } from "../config/index.js";
 import type { Logger } from "../logger.js";
-import type { BaseMetadata, BuildRules } from "./types.js";
+import type { BaseMetadata } from "./types.js";
 
 export type ParsedArgs = {
   orderId: string;
@@ -16,31 +16,17 @@ export type ParsedArgs = {
   }>;
 };
 
-export type BaseRule<
-  TMetadata extends BaseMetadata,
-  TParsedArgs extends ParsedArgs,
-  TIntentData extends unknown,
-> = (
-  parsedArgs: TParsedArgs,
-  context: BaseFiller<TMetadata, TParsedArgs, TIntentData>,
-) => Promise<Result<string>>;
-
 export abstract class BaseFiller<
   TMetadata extends BaseMetadata,
   TParsedArgs extends ParsedArgs,
   TIntentData extends unknown,
 > {
-  rules: Array<BaseRule<TMetadata, TParsedArgs, TIntentData>> = [];
-
   protected constructor(
     readonly multiProvider: MultiProvider,
     readonly allowBlockLists: GenericAllowBlockLists,
     readonly metadata: TMetadata,
     readonly log: Logger,
-    rulesConfig?: BuildRules<BaseRule<TMetadata, TParsedArgs, TIntentData>>,
-  ) {
-    if (rulesConfig) this.rules = this.buildRules(rulesConfig);
-  }
+  ) {}
 
   create() {
     return async (
@@ -79,38 +65,13 @@ export abstract class BaseFiller<
   protected async prepareIntent(
     parsedArgs: TParsedArgs,
   ): Promise<Result<TIntentData>> {
-    // this.log.info({
-    //   msg: "Evaluating filling Intent",
-    //   intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
-    // });
-
     const { senderAddress, recipients } = parsedArgs;
 
     if (!this.isAllowedIntent({ senderAddress, recipients })) {
       throw new Error("Not allowed intent");
     }
 
-    const result = await this.evaluateRules(parsedArgs);
-
-    if (!result.success) {
-      throw new Error(result.error);
-    }
-
     return { error: "Not implemented", success: false };
-  }
-
-  protected async evaluateRules(parsedArgs: TParsedArgs) {
-    let result: Result<string> = { success: true, data: "No rules" };
-
-    for (const rule of this.rules) {
-      result = await rule(parsedArgs, this);
-
-      if (!result.success) {
-        break;
-      }
-    }
-
-    return result;
   }
 
   protected abstract fill(
@@ -146,39 +107,5 @@ export abstract class BaseFiller<
         recipientAddress,
       }),
     );
-  }
-
-  private buildRules({
-    base = [],
-    custom,
-  }: BuildRules<BaseRule<TMetadata, TParsedArgs, TIntentData>>): Array<
-    BaseRule<TMetadata, TParsedArgs, TIntentData>
-  > {
-    const customRules = [];
-
-    if (this.metadata.customRules?.rules.length) {
-      if (!custom) {
-        throw new Error(
-          "Custom rules are specified in metadata, but no corresponding rule functions were provided.",
-        );
-      }
-
-      for (let i = 0; i < this.metadata.customRules.rules.length; i++) {
-        const rule = this.metadata.customRules.rules[i];
-        const ruleFn = custom[rule.name];
-
-        if (!ruleFn) {
-          throw new Error(
-            `Custom rule "${rule.name}" is specified in metadata but is not provided in the custom rules configuration.`,
-          );
-        }
-
-        customRules.push(ruleFn(rule.args));
-      }
-    }
-
-    const keepBaseRules = this.metadata.customRules?.keepBaseRules ?? true;
-
-    return keepBaseRules ? [...base, ...customRules] : customRules;
   }
 }

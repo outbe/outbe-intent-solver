@@ -23,11 +23,14 @@ const metadata: Layerzero7683Metadata = {
   customRules: {
     rules: [
       {
+        name: "intentNotFilled",
+      },
+      {
         name: "checkExchangeRate",
         // Uses tradingPairs from config/tradingPairs.ts
       },
       {
-        name: "intentNotFilled",
+        name: "enoughBalanceOnDestination",
       },
     ],
   },
