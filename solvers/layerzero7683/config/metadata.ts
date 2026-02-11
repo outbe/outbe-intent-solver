@@ -26,10 +26,6 @@ const metadata: Layerzero7683Metadata = {
         name: "intentNotFilled",
       },
       {
-        name: "checkExchangeRate",
-        // Uses tradingPairs from config/tradingPairs.ts
-      },
-      {
         name: "enoughBalanceOnDestination",
       },
     ],

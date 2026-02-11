@@ -56,7 +56,7 @@ class LayerZero7683Prepare extends BasePrepare<
         );
 
         if (alreadyQuoted) {
-            log.info({
+            this.log.info({
                 msg: "Already submitted quote",
                 orderId: parsedArgs.orderId,
             });
@@ -66,7 +66,7 @@ class LayerZero7683Prepare extends BasePrepare<
         // Calculate best output amount
         const bestOutputAmount = await this.calculateBestOutput(data);
 
-        log.info({
+        this.log.info({
             msg: "Submitting quote",
             orderId: parsedArgs.orderId,
             amount: bestOutputAmount.toString(),
@@ -87,7 +87,7 @@ class LayerZero7683Prepare extends BasePrepare<
             ? `${baseUrl}/tx/${receipt.transactionHash}`
             : receipt.transactionHash;
 
-        log.info({
+        this.log.info({
             msg: "Quote submitted",
             orderId: parsedArgs.orderId,
             amount: bestOutputAmount.toString(),
@@ -146,17 +146,19 @@ class LayerZero7683Prepare extends BasePrepare<
         );
 
         // Ensure we meet minimum requirement
-        const finalOutput = boostedOutput.gt(minOutputAmount) ? boostedOutput : minOutputAmount;
 
-        log.debug({
+        if (boostedOutput.lt(minOutputAmount)) {
+            throw new Error(`Cannot fulfill order. Boosted output: ${boostedOutput.toString()}, User minimum: ${minOutputAmount.toString()}`);
+        }
+
+        this.log.info({
             msg: "Calculated competitive quote",
             minRequired: minOutputAmount.toString(),
             boostedOutput: boostedOutput.toString(),
-            finalOffering: finalOutput.toString(),
             boostPercent: `${(pair.quoteTolerance * 100).toFixed(1)}%`,
         });
 
-        return finalOutput;
+        return boostedOutput;
     }
 
     /**
@@ -167,7 +169,7 @@ class LayerZero7683Prepare extends BasePrepare<
 
         const quotingPeriod = await this.destinationCt.quotingPeriod();
 
-        log.info({
+        this.log.info({
             msg: "Waiting for quoting period to end",
             quotingPeriodSeconds: quotingPeriod.toNumber(),
         });
@@ -176,7 +178,7 @@ class LayerZero7683Prepare extends BasePrepare<
             const quotingEnded = await this.destinationCt.isQuotingEnded(orderData);
 
             if (quotingEnded) {
-                log.info({
+                this.log.info({
                     msg: "Quoting period ended",
                 });
                 return;
@@ -202,7 +204,7 @@ class LayerZero7683Prepare extends BasePrepare<
         // Check if there are any quotes
         const hasQuotes = await this.destinationCt.hasQuotes(parsedArgs.orderId);
         if (!hasQuotes) {
-            log.info({
+            this.log.info({
                 msg: "No quotes submitted - cannot fill",
                 orderId: parsedArgs.orderId,
             });
@@ -233,7 +235,7 @@ class LayerZero7683Prepare extends BasePrepare<
             winningAmount: winningAmount.toString(),
             formattedAmount: formattedAmount,
         }
-        log.info(msg);
+        this.log.info(msg);
 
         if (!isWinner) {
             return undefined;
@@ -284,77 +286,75 @@ class LayerZero7683Prepare extends BasePrepare<
         originChainName: string,
         blockNumber: number
     ): Promise<{ shouldFill: boolean; winningAmount?: BigNumber }> {
-        // Extract intent data
-        const data: IntentData = {
-            fillInstructions: parsedArgs.resolvedOrder.fillInstructions,
-            maxSpent: parsedArgs.resolvedOrder.maxSpent,
-        };
-
-
-        // Decode order data to check auction phase
-        const originData = data.fillInstructions[0].originData;
-        const orderData = OrderEncoder.decode(originData);
-
         try {
-            const origin = await this.retrieveOriginInfo(
-                parsedArgs,
-            );
+            // Extract intent data
+            const data: IntentData = {
+                fillInstructions: parsedArgs.resolvedOrder.fillInstructions,
+                maxSpent: parsedArgs.resolvedOrder.maxSpent,
+            };
+
+            // Decode order data to check auction phase
+            const originData = data.fillInstructions[0].originData;
+            const orderData = OrderEncoder.decode(originData);
+
+            // Retrieve and log origin/target info
+            const origin = await this.retrieveOriginInfo(parsedArgs);
             const target = await this.retrieveTargetInfo(parsedArgs);
 
-            log.info({
+            this.log.info({
                 msg: "Intent Indexed",
                 intent: `${parsedArgs.orderId}`,
                 origin: origin.join(", "),
                 target: target.join(", "),
             });
-        } catch (error) {
-            log.error({
-                msg: "Failed retrieving origin and target info",
-                intent: `${parsedArgs.orderId}`,
-                error: JSON.stringify(error),
-            });
-        }
 
+            // Setup destination contract (reused across all methods)
+            const destinationSettler = bytes32ToAddress(
+                data.fillInstructions[0].destinationSettler
+            );
+            const _chainId = data.fillInstructions[0].destinationChainId.toString();
 
-        // Setup destination contract (reused across all methods)
-        const destinationSettler = bytes32ToAddress(
-            data.fillInstructions[0].destinationSettler
-        );
-        const _chainId = data.fillInstructions[0].destinationChainId.toString();
+            this.destinationSigner = this.multiProvider.getSigner(_chainId);
+            this.destinationCt = LayerZero7683__factory.connect(
+                destinationSettler,
+                this.destinationSigner
+            );
 
-        this.destinationSigner = this.multiProvider.getSigner(_chainId);
-        this.destinationCt = LayerZero7683__factory.connect(
-            destinationSettler,
-            this.destinationSigner
-        );
+            // PHASE DETECTION: Check if quoting period has ended
+            const quotingEnded = await this.destinationCt.isQuotingEnded(orderData);
 
-        // PHASE DETECTION: Check if quoting period has ended
-        const quotingEnded = await this.destinationCt.isQuotingEnded(orderData);
+            if (quotingEnded) {
+                // Quoting already ended, skip to winner check
+                this.log.info({
+                    msg: "Quoting already ended - checking winner directly",
+                    orderId: parsedArgs.orderId,
+                });
+            } else {
+                // QUOTING PHASE: Submit quote and wait for period to end
+                this.log.info({
+                    msg: "Quoting phase active",
+                    orderId: parsedArgs.orderId,
+                });
 
-        if (quotingEnded) {
-            // Quoting already ended, skip to winner check
-            log.info({
-                msg: "Quoting already ended - checking winner directly",
+                await this.submitQuote(parsedArgs, data);
+
+                // Wait for quoting period to end
+                await this.waitForQuotingEnd(orderData);
+            }
+
+            const winningAmount = await this.isWinner(parsedArgs, data);
+
+            if (winningAmount) {
+                return {shouldFill: true, winningAmount};
+            } else {
+                return {shouldFill: false};
+            }
+        } catch (error: any) {
+            this.log.error({
+                msg: "Cannot process order - validation failed",
                 orderId: parsedArgs.orderId,
+                error: error.message,
             });
-        } else {
-            // QUOTING PHASE: Submit quote and wait for period to end
-            log.info({
-                msg: "Quoting phase active",
-                orderId: parsedArgs.orderId,
-            });
-
-            await this.submitQuote(parsedArgs, data);
-
-            // Wait for quoting period to end
-            await this.waitForQuotingEnd(orderData);
-        }
-
-        const winningAmount = await this.isWinner(parsedArgs, data);
-
-        if (winningAmount) {
-            return {shouldFill: true, winningAmount};
-        } else {
             return {shouldFill: false};
         }
     }
