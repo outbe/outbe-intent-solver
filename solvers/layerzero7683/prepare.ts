@@ -10,7 +10,7 @@ import * as OrderEncoder from "../../lib/OrderEncoder.js";
 import {chainIdsToName, tradingPairs} from "../../config/index.js";
 import {
     retrieveOriginInfo,
-    retrieveTargetInfo,
+    retrieveTargetInfo, retrieveTokenBalance,
 } from "../utils.js";
 import {BasePrepare, type BaseRule} from "../BasePrepare.js";
 import type {BuildRules, RulesMap} from "../types.js";
@@ -66,6 +66,16 @@ class LayerZero7683Prepare extends BasePrepare<
         // Calculate best output amount
         const bestOutputAmount = await this.calculateBestOutput(data);
 
+        // Check if we have enough balance for this amount
+        const chainId = data.fillInstructions[0].destinationChainId.toString();
+        const tokenAddress = bytes32ToAddress(data.maxSpent[0].token);
+        const provider = this.multiProvider.getProvider(chainId);
+        const balance = await retrieveTokenBalance(tokenAddress, fillerAddress, provider);
+
+        if (balance.lt(bestOutputAmount)) {
+            throw new Error(`Insufficient balance on chain ${chainId} for ${tokenAddress}. Need ${bestOutputAmount.toString()}, have ${balance.toString()}`);
+        }
+
         this.log.info({
             msg: "Submitting quote",
             orderId: parsedArgs.orderId,
@@ -99,8 +109,9 @@ class LayerZero7683Prepare extends BasePrepare<
     /**
      * Calculate best output amount for competitive bidding
      * Uses tradingPairs config to calculate market rate + quoteTolerance
+     * Also used by enoughBalanceOnDestination rule
      */
-    private async calculateBestOutput(
+    async calculateBestOutput(
         data: IntentData
     ): Promise<BigNumber> {
         const originData = data.fillInstructions[0].originData;
@@ -155,7 +166,7 @@ class LayerZero7683Prepare extends BasePrepare<
             msg: "Calculated competitive quote",
             minRequired: minOutputAmount.toString(),
             boostedOutput: boostedOutput.toString(),
-            boostPercent: `${(pair.quoteTolerance * 100).toFixed(1)}%`,
+            quoteTolerance: `${(pair.quoteTolerance * 100).toFixed(1)}%`,
         });
 
         return boostedOutput;

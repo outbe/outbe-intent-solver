@@ -25,9 +25,6 @@ const metadata: Layerzero7683Metadata = {
       {
         name: "intentNotFilled",
       },
-      {
-        name: "enoughBalanceOnDestination",
-      },
     ],
   },
 };
