@@ -1,1 +1,1 @@
-export * as layerzero7683 from './layerzero7683/index.js';
+export * as layerzeroRouter from './layerzeroRouter/index.js';

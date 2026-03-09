@@ -3,8 +3,8 @@ import {formatUnits} from "@ethersproject/units";
 import type {MultiProvider} from "@hyperlane-xyz/sdk";
 import {bytes32ToAddress} from "@hyperlane-xyz/utils";
 
-import {LayerZero7683__factory} from "../../typechain/factories/layerzero7683/contracts/LayerZero7683__factory.js";
-import type {OpenEventArgs, IntentData, Layerzero7683Metadata} from "./types.js";
+import {LayerZeroRouter__factory} from "../../typechain/factories/solvers/layerzero7683/contracts/LayerZeroRouter__factory.js";
+import type {OpenEventArgs, IntentData, LayerZeroRouterMetadata} from "./types.js";
 import {log, getTokenDecimals, getTokenSymbol, calculateSolverOutput} from "./utils.js";
 import * as OrderEncoder from "../../lib/OrderEncoder.js";
 import {chainIdsToName, tradingPairs} from "../../config/index.js";
@@ -16,10 +16,10 @@ import {BasePrepare, type BaseRule} from "../BasePrepare.js";
 import type {BuildRules, RulesMap} from "../types.js";
 import {metadata} from "./config/index.js";
 
-export type LayerZero7683Rule = BaseRule<Layerzero7683Metadata, OpenEventArgs, IntentData>;
+export type LayerZeroRouterRule = BaseRule<LayerZeroRouterMetadata, OpenEventArgs, IntentData>;
 
-class LayerZero7683Prepare extends BasePrepare<
-    Layerzero7683Metadata,
+class LayerZeroRouterPrepare extends BasePrepare<
+    LayerZeroRouterMetadata,
     OpenEventArgs,
     IntentData
 > {
@@ -28,7 +28,7 @@ class LayerZero7683Prepare extends BasePrepare<
 
     constructor(
         multiProvider: MultiProvider,
-        rules?: BuildRules<LayerZero7683Rule>,
+        rules?: BuildRules<LayerZeroRouterRule>,
     ) {
         super(multiProvider, metadata, log, rules);
     }
@@ -86,7 +86,7 @@ class LayerZero7683Prepare extends BasePrepare<
         const tx = await this.destinationCt.submitQuote(
             parsedArgs.orderId,
             bestOutputAmount,
-            orderData
+            orderData,
         );
 
         const receipt = await tx.wait();
@@ -330,7 +330,7 @@ class LayerZero7683Prepare extends BasePrepare<
             const _chainId = data.fillInstructions[0].destinationChainId.toString();
 
             this.destinationSigner = this.multiProvider.getSigner(_chainId);
-            this.destinationCt = LayerZero7683__factory.connect(
+            this.destinationCt = LayerZeroRouter__factory.connect(
                 destinationSettler,
                 this.destinationSigner
             );
@@ -378,9 +378,9 @@ class LayerZero7683Prepare extends BasePrepare<
 
 export const create = (
     multiProvider: MultiProvider,
-    customRules?: RulesMap<LayerZero7683Rule>,
+    customRules?: RulesMap<LayerZeroRouterRule>,
 ) => {
-    return new LayerZero7683Prepare(multiProvider, {
+    return new LayerZeroRouterPrepare(multiProvider, {
         base: [],
         custom: customRules,
     }).create();

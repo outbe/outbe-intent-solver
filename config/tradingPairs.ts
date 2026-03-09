@@ -1,5 +1,5 @@
 /**
- * Trading pairs configuration for LayerZero7683 solver
+ * Trading pairs configuration for LayerZeroRouter solver
  * Defines supported token swaps between chains with rates and bidding strategy
  */
 

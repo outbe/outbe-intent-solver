@@ -1,24 +1,24 @@
 import { chainIdsToName } from "../../config/index.js";
 import type { TypedListener } from "../../typechain/common.js";
 import type {
-  LayerZero7683,
+  LayerZeroRouter,
   OpenEvent,
-} from "../../typechain/layerzero7683/contracts/LayerZero7683.js";
+} from "../../typechain/solvers/layerzero7683/contracts/LayerZeroRouter.js";
 import { BaseListener } from "../BaseListener.js";
 import { metadata } from "./config/index.js";
-import type { OpenEventArgs, Layerzero7683Metadata } from "./types.js";
+import type { OpenEventArgs, LayerZeroRouterMetadata } from "./types.js";
 import { log } from "./utils.js";
 import { getLastIndexedBlocks } from "./db.js";
-import { LayerZero7683__factory } from "../../typechain/factories/layerzero7683/contracts/LayerZero7683__factory.js";
+import { LayerZeroRouter__factory } from "../../typechain/factories/solvers/layerzero7683/contracts/LayerZeroRouter__factory.js";
 import type {MultiProvider} from "@hyperlane-xyz/sdk";
 
-export class Layerzero7683Listener extends BaseListener<
-  LayerZero7683,
+export class LayerZeroRouterListener extends BaseListener<
+  LayerZeroRouter,
   OpenEvent,
   OpenEventArgs
 > {
-  constructor(metadata: Layerzero7683Metadata,multiProvider: MultiProvider) {
-    super(LayerZero7683__factory, "Open", metadata, log,multiProvider);
+  constructor(metadata: LayerZeroRouterMetadata,multiProvider: MultiProvider) {
+    super(LayerZeroRouter__factory, "Open", metadata, log,multiProvider);
   }
 
   protected override parseEventArgs(
@@ -60,6 +60,5 @@ export const create = async (
     return contract;
   });
 
-  return new Layerzero7683Listener(metadata,multiProvider).create();
+  return new LayerZeroRouterListener(metadata,multiProvider).create();
 };
-

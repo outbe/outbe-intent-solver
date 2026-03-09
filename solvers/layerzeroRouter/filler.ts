@@ -8,10 +8,10 @@ import {
     type Result,
 } from "@hyperlane-xyz/utils";
 
-import {Erc20__factory} from "../../typechain/factories/contracts/Erc20__factory.js";
-import {LayerZero7683__factory} from "../../typechain/factories/layerzero7683/contracts/LayerZero7683__factory.js";
+import {Erc20__factory} from "../../typechain/factories/solvers/contracts/Erc20__factory.js";
+import {LayerZeroRouter__factory} from "../../typechain/factories/solvers/layerzero7683/contracts/LayerZeroRouter__factory.js";
 import type {
-    Layerzero7683Metadata,
+    LayerZeroRouterMetadata,
     IntentData,
     OpenEventArgs,
 } from "./types.js";
@@ -21,8 +21,8 @@ import {BaseFiller} from "../BaseFiller.js";
 import {allowBlockLists, metadata} from "./config/index.js";
 import {saveBlockNumber} from "./db.js";
 
-class LayerZero7683Filler extends BaseFiller<
-    Layerzero7683Metadata,
+class LayerZeroRouterFiller extends BaseFiller<
+    LayerZeroRouterMetadata,
     OpenEventArgs,
     IntentData
 > {
@@ -41,7 +41,7 @@ class LayerZero7683Filler extends BaseFiller<
             return {data: {fillInstructions, maxSpent}, success: true};
         } catch (error: any) {
             return {
-                error: error.message ?? "Failed to prepare LayerZero7683 Intent.",
+                error: error.message ?? "Failed to prepare LayerZeroRouter Intent.",
                 success: false,
             };
         }
@@ -127,7 +127,7 @@ class LayerZero7683Filler extends BaseFiller<
 
                     const filler = this.multiProvider.getSigner(_chainId);
                     const fillerAddress = await filler.getAddress();
-                    const destination = LayerZero7683__factory.connect(
+                    const destination = LayerZeroRouter__factory.connect(
                         destinationSettler,
                         filler,
                     );
@@ -137,14 +137,12 @@ class LayerZero7683Filler extends BaseFiller<
                             ? winningAmount || data.maxSpent[index].amount
                             : undefined;
 
-                    // Depending on the implementation we may call `destination.fill` directly or call some other
-                    // contract that will produce the funds needed to execute this leg and then in turn call
-                    // `destination.fill`
                     const tx = await destination.fill(
                         parsedArgs.orderId,
                         originData,
                         addressToBytes32(fillerAddress),
                         {value},
+
                     );
 
                     const receipt = await tx.wait();
@@ -199,7 +197,7 @@ class LayerZero7683Filler extends BaseFiller<
 
                     return Promise.all(
                         uniqueSettlers.map(async (destinationSettler) => {
-                            const destination = LayerZero7683__factory.connect(
+                            const destination = LayerZeroRouter__factory.connect(
                                 destinationSettler,
                                 filler,
                             );
@@ -260,7 +258,7 @@ class LayerZero7683Filler extends BaseFiller<
         if (!originSettlerAddress) return;
 
         const originProvider = this.multiProvider.getProvider(originChainName);
-        const originContract = LayerZero7683__factory.connect(
+        const originContract = LayerZeroRouter__factory.connect(
             originSettlerAddress,
             originProvider,
         );
@@ -311,5 +309,5 @@ class LayerZero7683Filler extends BaseFiller<
 }
 
 export const create = (multiProvider: MultiProvider) => {
-    return new LayerZero7683Filler(multiProvider).create();
+    return new LayerZeroRouterFiller(multiProvider).create();
 };

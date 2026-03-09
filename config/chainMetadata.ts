@@ -40,7 +40,7 @@ const customChainMetadata: ChainMap<ChainMetadata> = {
     },
     rpcUrls: [
       {
-        http: 'https://cosmopolitan-solemn-emerald.bsc-testnet.quiknode.pro/10f3eba8ae928e9655a53773651d528c78a45b4c/',
+        http: 'https://97.rpc.thirdweb.com/34f11a24bb8f2c2d5586f38df502f6a1',
         pagination: {
           maxBlockRange: 1000,
         },

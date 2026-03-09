@@ -2,7 +2,7 @@ import { defaultAbiCoder } from "@ethersproject/abi";
 import { BigNumber } from "@ethersproject/bignumber";
 import { ethers } from "ethers";
 import { createLogger } from "../../logger.js";
-import type { LayerZero7683 } from "../../typechain/layerzero7683/contracts/LayerZero7683.js";
+import type { LayerZeroRouter } from "../../typechain/solvers/layerzero7683/contracts/LayerZeroRouter.js";
 import { metadata } from "./config/index.js";
 
 export const log = createLogger(metadata.protocolName);
@@ -12,7 +12,7 @@ export const log = createLogger(metadata.protocolName);
  * Encodes payload and quotes the fee in one call
  */
 export async function quoteSettleFee(
-  destination: LayerZero7683,
+  destination: LayerZeroRouter,
   originChainId: BigNumber,
   orderId: string,
   fillerData: string,
@@ -42,7 +42,7 @@ export async function getTokenDecimals(
 
   // ERC20 token - query decimals
   const { Erc20__factory } = await import(
-    "../../typechain/factories/contracts/Erc20__factory.js"
+    "../../typechain/factories/solvers/contracts/Erc20__factory.js"
   );
   const provider = multiProvider.getProvider(chainName);
   const token = Erc20__factory.connect(tokenAddress, provider);
@@ -62,7 +62,7 @@ export async function getTokenSymbol(
   }
 
   const { Erc20__factory } = await import(
-    "../../typechain/factories/contracts/Erc20__factory.js"
+    "../../typechain/factories/solvers/contracts/Erc20__factory.js"
   );
   const provider = multiProvider.getProvider(chainName);
   const token = Erc20__factory.connect(tokenAddress, provider);
