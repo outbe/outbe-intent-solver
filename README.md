@@ -92,8 +92,11 @@ Prerequisites: Docker, Docker Compose
 # Build and start
 docker compose up -d --build
 
-# Live PM2 logs
+# Live PM2 logs (JSON)
 docker compose exec solver pm2 logs
+
+# Live PM2 logs (formatted)
+tail -f ./logs/solver-out.log | npx pino-pretty
 
 # PM2 process status
 docker compose exec solver pm2 list
