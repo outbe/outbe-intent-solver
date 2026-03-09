@@ -3,13 +3,13 @@ import type { TypedListener } from "../../typechain/common.js";
 import type {
   LayerZeroRouter,
   OpenEvent,
-} from "../../typechain/solvers/layerzero7683/contracts/LayerZeroRouter.js";
+} from "../../typechain/solvers/layerzeroRouter/contracts/LayerZeroRouter.js";
 import { BaseListener } from "../BaseListener.js";
 import { metadata } from "./config/index.js";
 import type { OpenEventArgs, LayerZeroRouterMetadata } from "./types.js";
 import { log } from "./utils.js";
 import { getLastIndexedBlocks } from "./db.js";
-import { LayerZeroRouter__factory } from "../../typechain/factories/solvers/layerzero7683/contracts/LayerZeroRouter__factory.js";
+import { LayerZeroRouter__factory } from "../../typechain/factories/solvers/layerzeroRouter/contracts/LayerZeroRouter__factory.js";
 import type {MultiProvider} from "@hyperlane-xyz/sdk";
 
 export class LayerZeroRouterListener extends BaseListener<

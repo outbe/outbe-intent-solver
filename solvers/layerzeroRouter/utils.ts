@@ -2,7 +2,7 @@ import { defaultAbiCoder } from "@ethersproject/abi";
 import { BigNumber } from "@ethersproject/bignumber";
 import { ethers } from "ethers";
 import { createLogger } from "../../logger.js";
-import type { LayerZeroRouter } from "../../typechain/solvers/layerzero7683/contracts/LayerZeroRouter.js";
+import type { LayerZeroRouter } from "../../typechain/solvers/layerzeroRouter/contracts/LayerZeroRouter.js";
 import { metadata } from "./config/index.js";
 
 export const log = createLogger(metadata.protocolName);

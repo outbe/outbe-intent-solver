@@ -9,7 +9,7 @@ import {
 } from "@hyperlane-xyz/utils";
 
 import {Erc20__factory} from "../../typechain/factories/solvers/contracts/Erc20__factory.js";
-import {LayerZeroRouter__factory} from "../../typechain/factories/solvers/layerzero7683/contracts/LayerZeroRouter__factory.js";
+import {LayerZeroRouter__factory} from "../../typechain/factories/solvers/layerzeroRouter/contracts/LayerZeroRouter__factory.js";
 import type {
     LayerZeroRouterMetadata,
     IntentData,

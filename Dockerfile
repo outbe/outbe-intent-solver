@@ -1,13 +1,10 @@
 FROM node:20-alpine
 
-# Bundle APP files
 WORKDIR /workspace
-COPY .  ./
-RUN yarn install
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+COPY . .
 RUN yarn build
 RUN npm install pm2 -g
-
-# Show current folder structure in logs
-RUN ls -al -R
 
 CMD [ "pm2-runtime", "start", "ecosystem.config.js", "--env", "production" ]

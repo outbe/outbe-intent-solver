@@ -8,7 +8,7 @@ The solver directory contains the implementation of the Intent Solver, a TypeScr
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
-- [LayerZero7683 Auction Solver](#layerzero7683-auction-solver)
+- [LayerZeroRouter Auction Solver](#layerzerorouter-auction-solver)
 - [Logging](#logging)
 
 ## Directory Structure
@@ -33,7 +33,7 @@ solver/
     ├── types.ts
     ├── utils.ts
     ├── contracts/
-    └── <eco|hyperlane7683|layerzero7683>/
+    └── <eco|hyperlane7683|layerzeroRouter>/
         ├── index.ts
         ├── listener.ts
         ├── prepare.ts       # Optional: pre-fill strategy (e.g., auction logic)
@@ -63,9 +63,9 @@ solver/
         - **`prepareIntent`**: evaluate allow/block lists, balances, and run the defined rules to decide whether to fill or not an intent.
         - **`fill`**: The actual filling.
         - **`settle`**: The settlement step, can be avoided.
-    - **<eco|hyperlane7683|layerzero7683>/**: Implements the solvers for different protocols.
+    - **<eco|hyperlane7683|layerzeroRouter>/**: Implements the solvers for different protocols.
         - **listener.ts**: Extends `BaseListener` to handle domain-specific events.
-        - **prepare.ts**: (Optional) Implements pre-fill strategy. For LayerZero7683, handles auction logic: submits quotes during quoting phase and verifies winner status.
+        - **prepare.ts**: (Optional) Implements pre-fill strategy. For LayerZeroRouter, handles auction logic: submits quotes during quoting phase and verifies winner status.
         - **filler.ts**: Extends `BaseFiller` to handle domain-specific intents.
         - **rules/**: Custom validation rules for deciding whether to fill an intent.
         - **contracts/**: Contains contract ABI and type definitions for interacting with domain-specific contracts.
@@ -73,24 +73,40 @@ solver/
 
 ## Installation
 
-### Prerequisites
+Create a `.env` file before running (see [Configuration](#configuration)).
 
-- [Node.js](https://nodejs.org/) (version compatible with your project's requirements)
-- [Yarn](https://yarnpkg.com/)
+### Option 1: Local
 
-### Steps
+Prerequisites: Node.js 20+, Yarn
 
-1. Install the dependencies:
+```sh
+yarn install
+yarn build
+```
 
-   ```sh
-   yarn install
-   ```
+### Option 2: Docker
 
-2. Build the project:
+Prerequisites: Docker, Docker Compose
 
-   ```sh
-   yarn build
-   ```
+```sh
+# Build and start
+docker compose up -d --build
+
+# Live PM2 logs
+docker compose exec solver pm2 logs
+
+# PM2 process status
+docker compose exec solver pm2 list
+
+# Enter container
+docker compose exec solver sh
+
+# Graceful restart PM2 processes
+docker compose exec solver pm2 reload all
+
+# Stop
+docker compose down
+```
 
 ## Configuration
 
@@ -206,15 +222,15 @@ Run in watch mode for development:
 yarn dev
 ```
 
-## LayerZero7683 Auction Solver
+## LayerZeroRouter Auction Solver
 
-The LayerZero7683 solver implements a **competitive auction mechanism** where multiple solvers compete by submitting quotes during a quoting period, and only the winning solver (highest output amount) can fill the order.
+The LayerZeroRouter solver implements a **competitive auction mechanism** where multiple solvers compete by submitting quotes during a quoting period, and only the winning solver (highest output amount) can fill the order.
 
 ### Architecture
 
 The solver uses a **three-module architecture**:
 
-1. **Listener** (`listener.ts`): Detects `Open` events from LayerZero7683 contracts
+1. **Listener** (`listener.ts`): Detects `Open` events from LayerZeroRouter contracts
 2. **Prepare** (`prepare.ts`): Handles auction logic - submits quotes during quoting phase
 3. **Filler** (`filler.ts`): Executes fills when solver wins the auction
 
