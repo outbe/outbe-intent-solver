@@ -16,7 +16,7 @@ const metadata: Layerzero7683Metadata = {
     },
     {
       address: ROUTER_CONTRACT,
-      chainName: "outbe",
+      chainName: "outbetestnet",
     },
   ],
 

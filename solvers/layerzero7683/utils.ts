@@ -21,7 +21,6 @@ export async function quoteSettleFee(
     ["bool", "bytes32[]", "bytes[]"],
     [true, [orderId], [fillerData]],
   );
-
   const fee = await destination.quote(originChainId, settlePayload, false);
   return fee.nativeFee;
 }
@@ -48,6 +47,26 @@ export async function getTokenDecimals(
   const provider = multiProvider.getProvider(chainName);
   const token = Erc20__factory.connect(tokenAddress, provider);
   return await token.decimals();
+}
+
+/**
+ * Get token symbol (native token symbol from chain metadata, query for ERC20)
+ */
+export async function getTokenSymbol(
+  tokenAddress: string,
+  chainName: string,
+  multiProvider: any,
+): Promise<string> {
+  if (tokenAddress === "0x0000000000000000000000000000000000000000") {
+    return multiProvider.getChainMetadata(chainName).nativeToken?.symbol ?? "ETH";
+  }
+
+  const { Erc20__factory } = await import(
+    "../../typechain/factories/contracts/Erc20__factory.js"
+  );
+  const provider = multiProvider.getProvider(chainName);
+  const token = Erc20__factory.connect(tokenAddress, provider);
+  return await token.symbol();
 }
 
 /**

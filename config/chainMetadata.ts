@@ -5,28 +5,28 @@ import { ProtocolType } from "@hyperlane-xyz/utils";
 
 
 const customChainMetadata: ChainMap<ChainMetadata> = {
-  outbe: {
-    protocol: ProtocolType.Ethereum,
-    chainId: 424242,
-    domainId: 424242,
-    name: "outbe",
-    displayName: "Outbe Dev",
-    nativeToken: {
-      name: "Coen",
-      symbol: "COEN",
-      decimals: 18,
-    },
-    rpcUrls: [
-      {
-        http: "https://eth.d.outbe.net/",
-        pagination: {
-          maxBlockRange: 1999,
-          minBlockNumber: 1,
-        },
-      },
-    ],
-    blockExplorers: [],
-  },
+    // outbe: {
+    //     protocol: ProtocolType.Ethereum,
+    //     chainId: 424242,
+    //     domainId: 424242,
+    //     name: "outbe",
+    //     displayName: "Outbe Dev",
+    //     nativeToken: {
+    //         name: "Coen",
+    //         symbol: "COEN",
+    //         decimals: 18,
+    //     },
+    //     rpcUrls: [
+    //         {
+    //             http: "https://eth.d.outbe.net/",
+    //             pagination: {
+    //                 maxBlockRange: 1999,
+    //                 minBlockNumber: 1,
+    //             },
+    //         },
+    //     ],
+    //     blockExplorers: [],
+    // },
   bsctestnet: {
     protocol: ProtocolType.Ethereum,
     chainId: 97,
@@ -40,9 +40,9 @@ const customChainMetadata: ChainMap<ChainMetadata> = {
     },
     rpcUrls: [
       {
-        http: 'https://97.rpc.thirdweb.com/34f11a24bb8f2c2d5586f38df502f6a1',
+        http: 'https://cosmopolitan-solemn-emerald.bsc-testnet.quiknode.pro/10f3eba8ae928e9655a53773651d528c78a45b4c/',
         pagination: {
-          maxBlockRange: 2000,
+          maxBlockRange: 1000,
         },
       },
     ],
@@ -54,7 +54,36 @@ const customChainMetadata: ChainMap<ChainMetadata> = {
         family: ExplorerFamily.Etherscan,
       },
     ],
+    transactionOverrides: {
+      gasPrice: 3_000_000_000, // 3 gwei
+    },
   },
+
+    outbetestnet: {
+        protocol: ProtocolType.Ethereum,
+        chainId: 512215,
+        domainId: 512215,
+        name: "outbetestnet",
+        displayName: "Outbe Testnet",
+        nativeToken: {
+            name: "Coen",
+            symbol: "COEN",
+            decimals: 18,
+        },
+        rpcUrls: [
+            {
+                http: "https://eth.testnet.outbe.net",
+                pagination: {
+                    maxBlockRange: 1999,
+                    minBlockNumber: 1,
+                },
+            },
+        ],
+        blockExplorers: [],
+    },
+
+
+
 };
 
 const chainMetadata = customChainMetadata

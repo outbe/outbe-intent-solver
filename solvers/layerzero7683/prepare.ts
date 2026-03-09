@@ -5,7 +5,7 @@ import {bytes32ToAddress} from "@hyperlane-xyz/utils";
 
 import {LayerZero7683__factory} from "../../typechain/factories/layerzero7683/contracts/LayerZero7683__factory.js";
 import type {OpenEventArgs, IntentData, Layerzero7683Metadata} from "./types.js";
-import {log, getTokenDecimals, calculateSolverOutput} from "./utils.js";
+import {log, getTokenDecimals, getTokenSymbol, calculateSolverOutput} from "./utils.js";
 import * as OrderEncoder from "../../lib/OrderEncoder.js";
 import {chainIdsToName, tradingPairs} from "../../config/index.js";
 import {
@@ -97,10 +97,14 @@ class LayerZero7683Prepare extends BasePrepare<
             ? `${baseUrl}/tx/${receipt.transactionHash}`
             : receipt.transactionHash;
 
+        const quoteDecimals = await getTokenDecimals(tokenAddress, chainId, this.multiProvider);
+        const quoteSymbol = await getTokenSymbol(tokenAddress, chainId, this.multiProvider);
+
         this.log.info({
             msg: "Quote submitted",
             orderId: parsedArgs.orderId,
             amount: bestOutputAmount.toString(),
+            formattedAmount: `${formatUnits(bestOutputAmount, quoteDecimals)} ${quoteSymbol}`,
             txDetails: txInfo,
             txHash: receipt.transactionHash,
         });
@@ -235,16 +239,16 @@ class LayerZero7683Prepare extends BasePrepare<
         const destinationChainName = chainIdsToName[orderData.destinationDomain.toString()];
         const outputToken = bytes32ToAddress(orderData.outputToken);
         const outputDecimals = await getTokenDecimals(outputToken, destinationChainName, this.multiProvider);
-        const formattedAmount = formatUnits(winningAmount, outputDecimals);
+        const outputSymbol = await getTokenSymbol(outputToken, destinationChainName, this.multiProvider);
+        const formattedAmount = `${formatUnits(winningAmount, outputDecimals)} ${outputSymbol}`;
 
         const msg = {
             msg: isWinner ? "Won auction" : "Not the auction winner",
             orderId: parsedArgs.orderId,
             winner: winnerAddress,
-            network: destinationChainName,
-            decimals: outputDecimals,
+            chainName: destinationChainName,
             winningAmount: winningAmount.toString(),
-            formattedAmount: formattedAmount,
+            formattedAmount,
         }
         this.log.info(msg);
 

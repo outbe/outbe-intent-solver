@@ -17,6 +17,19 @@
   },
   {
     "type": "function",
+    "name": "COMPACT",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract ITheCompact"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "FILLED",
     "inputs": [],
     "outputs": [
@@ -24,6 +37,19 @@
         "name": "",
         "type": "bytes32",
         "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "LOCK_TAG",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes12",
+        "internalType": "bytes12"
       }
     ],
     "stateMutability": "view"
@@ -1194,6 +1220,24 @@
   },
   {
     "type": "function",
+    "name": "setCompactConfig",
+    "inputs": [
+      {
+        "name": "_newCompact",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_newLockTag",
+        "type": "bytes12",
+        "internalType": "bytes12"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "setDefaultGasLimit",
     "inputs": [
       {
@@ -1287,6 +1331,19 @@
   },
   {
     "type": "function",
+    "name": "setSolverEscrow",
+    "inputs": [
+      {
+        "name": "_escrow",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "settle",
     "inputs": [
       {
@@ -1297,6 +1354,19 @@
     ],
     "outputs": [],
     "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "solverEscrow",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract ISolverDepositEscrow"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -1446,6 +1516,25 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "CompactConfigSet",
+    "inputs": [
+      {
+        "name": "compact",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "lockTag",
+        "type": "bytes12",
+        "indexed": false,
+        "internalType": "bytes12"
       }
     ],
     "anonymous": false
@@ -1827,6 +1916,25 @@
     "anonymous": false
   },
   {
+    "type": "event",
+    "name": "SolverEscrowUpdated",
+    "inputs": [
+      {
+        "name": "oldEscrow",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newEscrow",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
     "type": "error",
     "name": "AlreadyQuoted",
     "inputs": []
@@ -1834,6 +1942,16 @@
   {
     "type": "error",
     "name": "BelowMinimumOutput",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientCollateral",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidCompact",
     "inputs": []
   },
   {
