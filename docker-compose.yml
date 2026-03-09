@@ -1,0 +1,9 @@
+services:
+  solver:
+    build: .
+    container_name: intent-solver
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/workspace/logs
