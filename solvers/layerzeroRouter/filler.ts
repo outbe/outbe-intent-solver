@@ -8,8 +8,8 @@ import {
     type Result,
 } from "@hyperlane-xyz/utils";
 
-import {Erc20__factory} from "../../typechain/factories/contracts/Erc20__factory.js";
-import {LayerZeroRouter__factory} from "../../typechain/factories/layerzeroRouter/contracts/LayerZeroRouter__factory.js";
+import {ERC20__factory} from "../../typechain/factories/ERC20__factory.js";
+import {LayerZeroRouter__factory} from "../../typechain/factories/LayerZeroRouter__factory.js";
 import type {
     LayerZeroRouterMetadata,
     IntentData,
@@ -74,13 +74,13 @@ class LayerZeroRouterFiller extends BaseFiller<
                         return;
                     }
 
-                    const token = Erc20__factory.connect(tokenAddress, filler);
+                    const token = ERC20__factory.connect(tokenAddress, filler);
 
                     const fillerAddress = await filler.getAddress();
                     const allowance = await token.allowance(fillerAddress, recipient);
 
                     if (allowance.lt(amount)) {
-                        const tx = await Erc20__factory.connect(
+                        const tx = await ERC20__factory.connect(
                             tokenAddress,
                             filler,
                         ).approve(recipient, MaxUint256);

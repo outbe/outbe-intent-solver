@@ -1,7 +1,7 @@
 import { HashZero } from "@ethersproject/constants";
 import { bytes32ToAddress } from "@hyperlane-xyz/utils";
 
-import { LayerZeroRouter__factory } from "../../../typechain/factories/layerzeroRouter/contracts/LayerZeroRouter__factory.js";
+import { LayerZeroRouter__factory } from "../../../typechain/factories/LayerZeroRouter__factory.js";
 import { LayerZeroRouterRule } from "../prepare.js";
 
 const UNKNOWN = HashZero;

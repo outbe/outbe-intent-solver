@@ -2,7 +2,7 @@ import { defaultAbiCoder } from "@ethersproject/abi";
 import { BigNumber } from "@ethersproject/bignumber";
 import { ethers } from "ethers";
 import { createLogger } from "../../logger.js";
-import type { LayerZeroRouter } from "../../typechain/layerzeroRouter/contracts/LayerZeroRouter.js";
+import type { LayerZeroRouter } from "../../typechain/LayerZeroRouter.js";
 import { metadata } from "./config/index.js";
 
 export const log = createLogger(metadata.protocolName);
@@ -41,11 +41,11 @@ export async function getTokenDecimals(
   }
 
   // ERC20 token - query decimals
-  const { Erc20__factory } = await import(
-    "../../typechain/factories/contracts/Erc20__factory.js"
+  const { ERC20__factory } = await import(
+    "../../typechain/factories/ERC20__factory.js"
   );
   const provider = multiProvider.getProvider(chainName);
-  const token = Erc20__factory.connect(tokenAddress, provider);
+  const token = ERC20__factory.connect(tokenAddress, provider);
   return await token.decimals();
 }
 
@@ -61,11 +61,11 @@ export async function getTokenSymbol(
     return multiProvider.getChainMetadata(chainName).nativeToken?.symbol ?? "ETH";
   }
 
-  const { Erc20__factory } = await import(
-    "../../typechain/factories/contracts/Erc20__factory.js"
+  const { ERC20__factory } = await import(
+    "../../typechain/factories/ERC20__factory.js"
   );
   const provider = multiProvider.getProvider(chainName);
-  const token = Erc20__factory.connect(tokenAddress, provider);
+  const token = ERC20__factory.connect(tokenAddress, provider);
   return await token.symbol();
 }
 

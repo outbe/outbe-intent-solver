@@ -1,7 +1,7 @@
 import type { BigNumber } from "ethers";
 import z from "zod";
 
-import type { OpenEventObject } from "../../typechain/layerzeroRouter/contracts/LayerZeroRouter.js";
+import type { OpenEventObject } from "../../typechain/LayerZeroRouter.js";
 import { BaseMetadataSchema } from "../types.js";
 
 export type ExtractStruct<T, K extends object> = T extends (infer U & K)[]

@@ -3,7 +3,7 @@ import {formatUnits} from "@ethersproject/units";
 import type {MultiProvider} from "@hyperlane-xyz/sdk";
 import {bytes32ToAddress} from "@hyperlane-xyz/utils";
 
-import {LayerZeroRouter__factory} from "../../typechain/factories/layerzeroRouter/contracts/LayerZeroRouter__factory.js";
+import {LayerZeroRouter__factory} from "../../typechain/factories/LayerZeroRouter__factory.js";
 import type {OpenEventArgs, IntentData, LayerZeroRouterMetadata} from "./types.js";
 import {log, getTokenDecimals, getTokenSymbol, calculateSolverOutput} from "./utils.js";
 import * as OrderEncoder from "../../lib/OrderEncoder.js";

@@ -10,7 +10,7 @@ import { password } from "@inquirer/prompts";
 
 import { MNEMONIC, PRIVATE_KEY } from "../config/index.js";
 import { NonceKeeperWallet } from "../NonceKeeperWallet.js";
-import { Erc20__factory } from "../typechain/factories/contracts/Erc20__factory.js";
+import { ERC20__factory } from "../typechain/factories/ERC20__factory.js";
 
 export async function getMultiProvider(chainMetadata: ChainMap<ChainMetadata>) {
   const multiProvider = new MultiProvider(chainMetadata);
@@ -72,7 +72,7 @@ export async function retrieveTokenInfo({
     };
   }
 
-  const erc20 = Erc20__factory.connect(
+  const erc20 = ERC20__factory.connect(
     tokenAddress,
     multiProvider.getProvider(chainName),
   );
@@ -144,6 +144,6 @@ export function retrieveTokenBalance(
     return provider.getBalance(ownerAddress);
   }
 
-  const erc20 = Erc20__factory.connect(tokenAddress, provider);
+  const erc20 = ERC20__factory.connect(tokenAddress, provider);
   return erc20.balanceOf(ownerAddress);
 }

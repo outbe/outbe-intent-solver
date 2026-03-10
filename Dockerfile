@@ -6,7 +6,7 @@ COPY package.json yarn.lock ./
 RUN yarn install --ignore-scripts
 COPY . .
 RUN yarn postinstall
-RUN ls -R typechain/ && yarn build
+RUN yarn build
 RUN npm install pm2 -g
 
 CMD [ "pm2-runtime", "start", "ecosystem.config.cjs", "--env", "production" ]
