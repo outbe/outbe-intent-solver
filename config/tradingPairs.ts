@@ -33,35 +33,7 @@ export interface TradingPair {
 const coenUsdRate = await getOracleRate("COEN/USDC") ?? 0.012;
 
 export const tradingPairs: TradingPair[] = [
-    // ============ Native COEN (Outbe) ↔ Native BNB (BSC) ============
-
-    // Outbe native COEN → BSC native BNB
-    {
-        originChain: "outbetestnet",
-        destinationChain: "bsctestnet",
-        inputToken: "0x0000000000000000000000000000000000000000", // Native COEN
-        outputToken: "0x0000000000000000000000000000000000000000", // Native BNB
-        exchangeRate: 1, // 1 COEN = 0.0001 BNB (with profit included)
-        quoteTolerance: 0.01, // 3% boost for native swaps
-    },
-
-    // BSC native BNB → Outbe native COEN
-    {
-        originChain: "bsctestnet",
-        destinationChain: "outbetestnet",
-        inputToken: "0x0000000000000000000000000000000000000000", // Native BNB
-        outputToken: "0x0000000000000000000000000000000000000000", // Native COEN
-        exchangeRate: 1, // 1 BNB = 10000 COEN (inverse, with profit)
-        quoteTolerance: 0.01,
-    },
-
-
-    // ============ Native COEN (Outbe) ↔ USDC (BSC) ============
-
-
-    // USD0
-
-
+    // USD0<->COEN
     {
         originChain: "outbetestnet",
         destinationChain: "bsctestnet",
@@ -79,6 +51,26 @@ export const tradingPairs: TradingPair[] = [
         exchangeRate: parseFloat((1 / coenUsdRate).toFixed(6)),
         quoteTolerance: 0.01, //%1
     },
+        //USD0 <-> USD0
+
+    {
+        originChain: "outbetestnet",
+        destinationChain: "bsctestnet",
+        inputToken: "0x74c8af2F5D7288711795048337e5580CbcB9EB02", // USD0 Test Token on Outbe
+        outputToken: "0xcbCA050D4e7F3D025131c605bAf257829A7Fbb49", // USD0 Test Token on BSC
+        exchangeRate: 1,
+        quoteTolerance: 0,
+    },
+
+    {
+        originChain: "bsctestnet",
+        destinationChain: "outbetestnet",
+        inputToken: "0xcbCA050D4e7F3D025131c605bAf257829A7Fbb49",
+        outputToken: "0x74c8af2F5D7288711795048337e5580CbcB9EB02",
+        exchangeRate: 1,
+        quoteTolerance: 0,
+    },
+
 
 
 ];
