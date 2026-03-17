@@ -204,6 +204,35 @@ class LayerZeroRouterPrepare extends BasePrepare<
     }
 
     /**
+     * Claim the order on-chain after winning the auction
+     * Must be called before fill() — sets order status to CLAIMED
+     */
+    private async claimOrder(
+        parsedArgs: OpenEventArgs,
+        data: IntentData
+    ): Promise<void> {
+        const originData = data.fillInstructions[0].originData;
+
+        this.log.info({
+            msg: "Claiming order",
+            orderId: parsedArgs.orderId,
+        });
+
+        const tx = await this.destinationCt.claimOrder(
+            parsedArgs.orderId,
+            originData
+        );
+
+        const receipt = await tx.wait();
+
+        this.log.info({
+            msg: "Order claimed",
+            orderId: parsedArgs.orderId,
+            txHash: receipt.transactionHash,
+        });
+    }
+
+    /**
      * Check if this solver won the auction
      * Returns winning amount if won, undefined otherwise
      */
@@ -360,6 +389,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
             const winningAmount = await this.isWinner(parsedArgs, data);
 
             if (winningAmount) {
+                await this.claimOrder(parsedArgs, data);
                 return {shouldFill: true, winningAmount};
             } else {
                 return {shouldFill: false};
