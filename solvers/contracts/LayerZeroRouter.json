@@ -157,6 +157,25 @@
   },
   {
     "type": "function",
+    "name": "auctionStartedAt",
+    "inputs": [
+      {
+        "name": "orderId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "claimOrder",
     "inputs": [
       {
@@ -343,6 +362,11 @@
     "type": "function",
     "name": "getQuotingDeadline",
     "inputs": [
+      {
+        "name": "orderId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
       {
         "name": "orderData",
         "type": "tuple",
@@ -713,6 +737,11 @@
     "type": "function",
     "name": "isQuotingEnded",
     "inputs": [
+      {
+        "name": "orderId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
       {
         "name": "orderData",
         "type": "tuple",
@@ -1394,7 +1423,7 @@
       {
         "name": "",
         "type": "address",
-        "internalType": "contract ISolverDepositEscrow"
+        "internalType": "contract ISolverEscrow"
       }
     ],
     "stateMutability": "view"
@@ -1525,6 +1554,25 @@
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "AuctionRestarted",
+    "inputs": [
+      {
+        "name": "orderId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "disqualifiedSolver",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
   },
   {
     "type": "event",
