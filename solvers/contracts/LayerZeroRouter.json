@@ -366,78 +366,6 @@
         "name": "orderId",
         "type": "bytes32",
         "internalType": "bytes32"
-      },
-      {
-        "name": "orderData",
-        "type": "tuple",
-        "internalType": "struct OrderData",
-        "components": [
-          {
-            "name": "sender",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "recipient",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "inputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "outputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "amountIn",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "amountOut",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "senderNonce",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "originDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationSettler",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "fillDeadline",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "createdAt",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "data",
-            "type": "bytes",
-            "internalType": "bytes"
-          }
-        ]
       }
     ],
     "outputs": [
@@ -457,78 +385,6 @@
         "name": "orderId",
         "type": "bytes32",
         "internalType": "bytes32"
-      },
-      {
-        "name": "orderData",
-        "type": "tuple",
-        "internalType": "struct OrderData",
-        "components": [
-          {
-            "name": "sender",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "recipient",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "inputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "outputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "amountIn",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "amountOut",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "senderNonce",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "originDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationSettler",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "fillDeadline",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "createdAt",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "data",
-            "type": "bytes",
-            "internalType": "bytes"
-          }
-        ]
       }
     ],
     "outputs": [
@@ -541,25 +397,6 @@
         "name": "amount",
         "type": "uint256",
         "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "hasQuotes",
-    "inputs": [
-      {
-        "name": "orderId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
@@ -649,170 +486,12 @@
   },
   {
     "type": "function",
-    "name": "isOrderExpired",
-    "inputs": [
-      {
-        "name": "orderData",
-        "type": "tuple",
-        "internalType": "struct OrderData",
-        "components": [
-          {
-            "name": "sender",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "recipient",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "inputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "outputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "amountIn",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "amountOut",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "senderNonce",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "originDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationSettler",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "fillDeadline",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "createdAt",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "data",
-            "type": "bytes",
-            "internalType": "bytes"
-          }
-        ]
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "isQuotingEnded",
     "inputs": [
       {
         "name": "orderId",
         "type": "bytes32",
         "internalType": "bytes32"
-      },
-      {
-        "name": "orderData",
-        "type": "tuple",
-        "internalType": "struct OrderData",
-        "components": [
-          {
-            "name": "sender",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "recipient",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "inputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "outputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "amountIn",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "amountOut",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "senderNonce",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "originDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationSettler",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "fillDeadline",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "createdAt",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "data",
-            "type": "bytes",
-            "internalType": "bytes"
-          }
-        ]
       }
     ],
     "outputs": [
@@ -1503,11 +1182,6 @@
             "internalType": "uint32"
           },
           {
-            "name": "createdAt",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
             "name": "data",
             "type": "bytes",
             "internalType": "bytes"
@@ -2046,6 +1720,11 @@
   {
     "type": "error",
     "name": "InvalidEndpointCall",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidFillDeadline",
     "inputs": []
   },
   {

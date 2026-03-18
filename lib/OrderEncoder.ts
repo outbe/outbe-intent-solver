@@ -15,7 +15,6 @@ export interface OrderData {
   destinationDomain: number; // uint32
   destinationSettler: string; // bytes32
   fillDeadline: number; // uint32
-  createdAt: number; // uint32
   data: string; // bytes
 }
 
@@ -35,7 +34,6 @@ export const ORDER_DATA_TYPE =
   "uint32 destinationDomain," +
   "bytes32 destinationSettler," +
   "uint32 fillDeadline," +
-  "uint32 createdAt," +
   "bytes data)";
 
 /**
@@ -63,7 +61,7 @@ export function encode(order: OrderData): string {
 
   return abiCoder.encode(
     [
-      "tuple(bytes32,bytes32,bytes32,bytes32,uint256,uint256,uint256,uint32,uint32,bytes32,uint32,uint32,bytes)",
+      "tuple(bytes32,bytes32,bytes32,bytes32,uint256,uint256,uint256,uint32,uint32,bytes32,uint32,bytes)",
     ],
     [
       [
@@ -78,7 +76,6 @@ export function encode(order: OrderData): string {
         order.destinationDomain,
         order.destinationSettler,
         order.fillDeadline,
-        order.createdAt,
         order.data,
       ],
     ],
@@ -94,7 +91,7 @@ export function decode(orderBytes: string): OrderData {
 
   const decoded = abiCoder.decode(
     [
-      "tuple(bytes32,bytes32,bytes32,bytes32,uint256,uint256,uint256,uint32,uint32,bytes32,uint32,uint32,bytes)",
+      "tuple(bytes32,bytes32,bytes32,bytes32,uint256,uint256,uint256,uint32,uint32,bytes32,uint32,bytes)",
     ],
     orderBytes,
   )[0];
@@ -111,8 +108,7 @@ export function decode(orderBytes: string): OrderData {
     destinationDomain: decoded[8],
     destinationSettler: decoded[9],
     fillDeadline: decoded[10],
-    createdAt: decoded[11],
-    data: decoded[12],
+    data: decoded[11],
   };
 }
 
@@ -153,7 +149,6 @@ export function createOrderData(params: {
     destinationDomain: params.destinationDomain,
     destinationSettler: utils.hexZeroPad(params.destinationSettler, 32),
     fillDeadline: params.fillDeadline,
-    createdAt: 0, // Will be set by the contract
     data: params.data || "0x",
   };
 }

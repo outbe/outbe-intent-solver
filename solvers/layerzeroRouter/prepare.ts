@@ -179,7 +179,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
     /**
      * Wait for quoting period to end by polling contract
      */
-    private async waitForQuotingEnd(orderId: string, orderData: any): Promise<void> {
+    private async waitForQuotingEnd(orderId: string): Promise<void> {
         const pollInterval = 1000; // Check every 1 second
 
         const quotingPeriod = await this.destinationCt.quotingPeriod();
@@ -190,7 +190,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
         });
 
         while (true) {
-            const quotingEnded = await this.destinationCt.isQuotingEnded(orderId, orderData);
+            const quotingEnded = await this.destinationCt.isQuotingEnded(orderId);
 
             if (quotingEnded) {
                 this.log.info({
@@ -264,8 +264,8 @@ class LayerZeroRouterPrepare extends BasePrepare<
         const orderData = OrderEncoder.decode(originData);
 
         // Check if there are any quotes
-        const hasQuotes = await this.destinationCt.hasQuotes(parsedArgs.orderId);
-        if (!hasQuotes) {
+        const quoteCount = await this.destinationCt.getQuoteCount(parsedArgs.orderId);
+        if (quoteCount.eq(0)) {
             this.log.info({
                 msg: "No quotes submitted - cannot fill",
                 orderId: parsedArgs.orderId,
@@ -276,7 +276,6 @@ class LayerZeroRouterPrepare extends BasePrepare<
         // Get winner from contract
         const [winnerAddress, winningAmount] = await this.destinationCt.getWinner(
             parsedArgs.orderId,
-            orderData
         );
 
         const isWinner =
@@ -302,7 +301,6 @@ class LayerZeroRouterPrepare extends BasePrepare<
         if (!isWinner) {
             return undefined;
         }
-
 
         return winningAmount;
     }
@@ -346,10 +344,9 @@ class LayerZeroRouterPrepare extends BasePrepare<
     private async runAuctionRound(
         parsedArgs: OpenEventArgs,
         data: IntentData,
-        orderData: any,
     ): Promise<{ shouldFill: boolean; winningAmount?: BigNumber }> {
         // PHASE DETECTION: Check if quoting period has ended
-        const quotingEnded = await this.destinationCt.isQuotingEnded(parsedArgs.orderId, orderData);
+        const quotingEnded = await this.destinationCt.isQuotingEnded(parsedArgs.orderId);
 
         if (quotingEnded) {
             this.log.info({
@@ -363,7 +360,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
             });
 
             await this.submitQuote(parsedArgs, data);
-            await this.waitForQuotingEnd(parsedArgs.orderId, orderData);
+            await this.waitForQuotingEnd(parsedArgs.orderId);
         }
 
         const winningAmount = await this.isWinner(parsedArgs, data);
@@ -383,7 +380,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
             msg: "Re-entering auction after restart",
             orderId: parsedArgs.orderId,
         });
-        return this.runAuctionRound(parsedArgs, data, orderData);
+        return this.runAuctionRound(parsedArgs, data);
     }
 
     /**
@@ -401,10 +398,6 @@ class LayerZeroRouterPrepare extends BasePrepare<
                 fillInstructions: parsedArgs.resolvedOrder.fillInstructions,
                 maxSpent: parsedArgs.resolvedOrder.maxSpent,
             };
-
-            // Decode order data to check auction phase
-            const originData = data.fillInstructions[0].originData;
-            const orderData = OrderEncoder.decode(originData);
 
             // Retrieve and log origin/target info
             const origin = await this.retrieveOriginInfo(parsedArgs);
@@ -429,7 +422,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
                 this.destinationSigner
             );
 
-            return await this.runAuctionRound(parsedArgs, data, orderData);
+            return await this.runAuctionRound(parsedArgs, data);
         } catch (error: any) {
             this.log.error({
                 msg: "Cannot process order - validation failed",
