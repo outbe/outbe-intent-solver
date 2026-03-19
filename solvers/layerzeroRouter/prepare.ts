@@ -4,6 +4,7 @@ import type {MultiProvider} from "@hyperlane-xyz/sdk";
 import {bytes32ToAddress} from "@hyperlane-xyz/utils";
 
 import {LayerZeroRouter__factory} from "../../typechain/factories/LayerZeroRouter__factory.js";
+import {SolverEscrow__factory} from "../../typechain/factories/SolverEscrow__factory.js";
 import type {OpenEventArgs, IntentData, LayerZeroRouterMetadata} from "./types.js";
 import {log, getTokenDecimals, getTokenSymbol, calculateSolverOutput} from "./utils.js";
 import * as OrderEncoder from "../../lib/OrderEncoder.js";
@@ -11,6 +12,7 @@ import {chainIdsToName, tradingPairs} from "../../config/index.js";
 import {
     retrieveOriginInfo,
     retrieveTargetInfo, retrieveTokenBalance,
+    getTxDetails,
 } from "../utils.js";
 import {BasePrepare, type BaseRule} from "../BasePrepare.js";
 import type {BuildRules, RulesMap} from "../types.js";
@@ -66,14 +68,38 @@ class LayerZeroRouterPrepare extends BasePrepare<
         // Calculate best output amount
         const bestOutputAmount = await this.calculateBestOutput(data);
 
-        // Check if we have enough balance for this amount
         const chainId = data.fillInstructions[0].destinationChainId.toString();
         const tokenAddress = bytes32ToAddress(data.maxSpent[0].token);
+
+        // Check escrow collateral before submitting quote
+        const escrowAddress = await this.destinationCt.solverEscrow();
+        const escrow = SolverEscrow__factory.connect(escrowAddress, this.destinationSigner);
+        const hasCollateral = await escrow.hasMinCollateral(fillerAddress, tokenAddress, bestOutputAmount);
+
+        if (!hasCollateral) {
+            const [total, locked, available] = await escrow.getBalance(fillerAddress, tokenAddress);
+            const required = await escrow.getCollateralAmount(bestOutputAmount);
+            throw new Error(
+                `Insufficient escrow collateral on chain ${chainId}. ` +
+                `Required: ${required.toString()}, Available: ${available.toString()}, ` +
+                `Total: ${total.toString()}, Locked: ${locked.toString()}`
+            );
+        }
+
+        // Check if we have enough balance for this amount
         const provider = this.multiProvider.getProvider(chainId);
         const balance = await retrieveTokenBalance(tokenAddress, fillerAddress, provider);
 
         if (balance.lt(bestOutputAmount)) {
-            throw new Error(`Insufficient balance on chain ${chainId} for ${tokenAddress}. Need ${bestOutputAmount.toString()}, have ${balance.toString()}`);
+            // throw new Error(`Insufficient balance on chain ${chainId} for ${tokenAddress}. Need ${bestOutputAmount.toString()}, have ${balance.toString()}`);
+            this.log.warn({
+                msg: "Insufficient balance on destination chain",
+                orderId: parsedArgs.orderId,
+                chainId,
+                tokenAddress,
+                need: bestOutputAmount.toString(),
+                have: balance.toString(),
+            });
         }
 
         this.log.info({
@@ -90,12 +116,6 @@ class LayerZeroRouterPrepare extends BasePrepare<
         );
 
         const receipt = await tx.wait();
-        const baseUrl =
-            this.destinationSigner.blockExplorers?.[0].url;
-
-        const txInfo = baseUrl
-            ? `${baseUrl}/tx/${receipt.transactionHash}`
-            : receipt.transactionHash;
 
         const quoteDecimals = await getTokenDecimals(tokenAddress, chainId, this.multiProvider);
         const quoteSymbol = await getTokenSymbol(tokenAddress, chainId, this.multiProvider);
@@ -105,7 +125,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
             orderId: parsedArgs.orderId,
             amount: bestOutputAmount.toString(),
             formattedAmount: `${formatUnits(bestOutputAmount, quoteDecimals)} ${quoteSymbol}`,
-            txDetails: txInfo,
+            txDetails: getTxDetails(receipt.transactionHash, this.multiProvider, chainId),
             txHash: receipt.transactionHash,
         });
     }
@@ -163,7 +183,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
         // Ensure we meet minimum requirement
 
         if (boostedOutput.lt(minOutputAmount)) {
-            throw new Error(`Cannot fulfill order. Boosted output: ${boostedOutput.toString()}, User minimum: ${minOutputAmount.toString()}`);
+            throw new Error(`Cannot fulfill order. Boosted output: ${formatUnits(boostedOutput, inputDecimals)}, User minimum: ${formatUnits(minOutputAmount, outputDecimals)}`);
         }
 
         this.log.info({
@@ -226,6 +246,8 @@ class LayerZeroRouterPrepare extends BasePrepare<
         );
 
         const receipt = await tx.wait();
+        const _chainId = data.fillInstructions[0].destinationChainId.toString();
+        const txDetails = getTxDetails(receipt.transactionHash, this.multiProvider, _chainId);
 
         // Check if auction was restarted (winner lacked collateral)
         const restartedEvent = receipt.events?.find(
@@ -237,6 +259,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
                 msg: "Auction restarted — winner disqualified for insufficient collateral",
                 orderId: parsedArgs.orderId,
                 disqualifiedSolver: restartedEvent.args?.disqualifiedSolver,
+                txDetails,
                 txHash: receipt.transactionHash,
             });
             return false;
@@ -245,6 +268,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
         this.log.info({
             msg: "Order claimed",
             orderId: parsedArgs.orderId,
+            txDetails,
             txHash: receipt.transactionHash,
         });
         return true;

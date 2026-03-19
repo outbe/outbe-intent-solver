@@ -10,6 +10,15 @@ const prettyConfig: PrettyOptions = {
   ignore: "hostname,pid,level",
   messageFormat: (log, msgKey) => {
     const message = `${log[msgKey]}`;
+    const level = log.level as number;
+
+    // error = 50, warn = 40
+    if (level >= 50) {
+      return chalk.red(message);
+    }
+    if (level >= 40) {
+      return chalk.yellow(message);
+    }
 
     if (log.name) {
       return chalk.hex(uniqolor(log.name as string).color)(message);

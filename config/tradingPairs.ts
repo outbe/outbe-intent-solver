@@ -40,7 +40,7 @@ export const tradingPairs: TradingPair[] = [
         inputToken: "0x0000000000000000000000000000000000000000", // Native COEN
         outputToken: "0xcbCA050D4e7F3D025131c605bAf257829A7Fbb49", // USD0 Test Token on BSC
         exchangeRate: coenUsdRate,
-        quoteTolerance: 0.01, //%1
+        quoteTolerance: 0.005, //%1
     },
 
     {
@@ -49,7 +49,7 @@ export const tradingPairs: TradingPair[] = [
         inputToken: "0xcbCA050D4e7F3D025131c605bAf257829A7Fbb49",
         outputToken: "0x0000000000000000000000000000000000000000",
         exchangeRate: parseFloat((1 / coenUsdRate).toFixed(6)),
-        quoteTolerance: 0.01, //%1
+        quoteTolerance: 0.005, //%1
     },
         //USD0 <-> USD0
 

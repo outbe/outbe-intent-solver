@@ -20,6 +20,7 @@ import {log, quoteSettleFee, getTokenDecimals, getTokenSymbol} from "./utils.js"
 import {BaseFiller} from "../BaseFiller.js";
 import {allowBlockLists, metadata} from "./config/index.js";
 import {saveBlockNumber} from "./db.js";
+import {getTxDetails} from "../utils.js";
 
 class LayerZeroRouterFiller extends BaseFiller<
     LayerZeroRouterMetadata,
@@ -86,9 +87,6 @@ class LayerZeroRouterFiller extends BaseFiller<
                         ).approve(recipient, MaxUint256);
 
                         const receipt = await tx.wait();
-                        const baseUrl =
-                            this.multiProvider.getChainMetadata(_chainId).blockExplorers?.[0]
-                                .url;
 
                         this.log.debug({
                             msg: "Approval",
@@ -97,9 +95,8 @@ class LayerZeroRouterFiller extends BaseFiller<
                             tokenAddress,
                             recipient,
                             chainId: _chainId,
-                            tx: baseUrl
-                                ? `${baseUrl}/tx/${receipt.transactionHash}`
-                                : `${receipt.transactionHash}`,
+                            txDetails: getTxDetails(receipt.transactionHash, this.multiProvider, _chainId),
+                            txHash: receipt.transactionHash,
                         });
                     } else {
                         this.log.debug({
@@ -146,16 +143,11 @@ class LayerZeroRouterFiller extends BaseFiller<
                     );
 
                     const receipt = await tx.wait();
-                    const baseUrl =
-                        this.multiProvider.getChainMetadata(_chainId).blockExplorers?.[0]?.url;
-                    const txInfo = baseUrl
-                        ? `${baseUrl}/tx/${receipt.transactionHash}`
-                        : receipt.transactionHash;
 
                     log.info({
                         msg: "Filled Intent",
                         intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
-                        txDetails: txInfo,
+                        txDetails: getTxDetails(receipt.transactionHash, this.multiProvider, _chainId),
                         txHash: receipt.transactionHash,
                     });
                 },
@@ -226,7 +218,7 @@ class LayerZeroRouterFiller extends BaseFiller<
                                     msg: "Settlement message sent to LayerZero",
                                     intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
                                     status: "Waiting for LayerZero delivery to origin chain",
-                                    txDetails: `${receipt.transactionHash}`,
+                                    txDetails: getTxDetails(receipt.transactionHash, this.multiProvider, destinationChain),
                                     txHash: receipt.transactionHash,
                                 });
 
@@ -292,6 +284,7 @@ class LayerZeroRouterFiller extends BaseFiller<
                 receiver,
                 chainName: originChainName,
                 received,
+                txDetails: getTxDetails(event.transactionHash, this.multiProvider, originChainName),
                 txHash: event.transactionHash,
             });
         };
