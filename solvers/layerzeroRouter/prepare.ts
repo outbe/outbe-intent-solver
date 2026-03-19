@@ -79,11 +79,17 @@ class LayerZeroRouterPrepare extends BasePrepare<
         if (!hasCollateral) {
             const [total, locked, available] = await escrow.getBalance(fillerAddress, tokenAddress);
             const required = await escrow.getCollateralAmount(bestOutputAmount);
-            throw new Error(
-                `Insufficient escrow collateral on chain ${chainId}. ` +
-                `Required: ${required.toString()}, Available: ${available.toString()}, ` +
-                `Total: ${total.toString()}, Locked: ${locked.toString()}`
-            );
+            // throw new Error(
+            //     `Insufficient escrow collateral on chain ${chainId}. ` +
+            //     `Required: ${required.toString()}, Available: ${available.toString()}, ` +
+            //     `Total: ${total.toString()}, Locked: ${locked.toString()}`
+            // );
+            this.log.warn({
+                msg: `Insufficient escrow collateral on chain ${chainId}. ` +
+                    `Required: ${required.toString()}, Available: ${available.toString()}, ` +
+                    `Total: ${total.toString()}, Locked: ${locked.toString()}`
+            });
+
         }
 
         // Check if we have enough balance for this amount
