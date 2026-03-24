@@ -50,6 +50,7 @@ const customChainMetadata: ChainMap<ChainMetadata> = {
     },
 
     outbetestnet: {
+
         protocol: ProtocolType.Ethereum,
         chainId: 512215,
         domainId: 512215,
@@ -69,7 +70,14 @@ const customChainMetadata: ChainMap<ChainMetadata> = {
                 },
             },
         ],
-        blockExplorers: [],
+        blockExplorers: [
+            {
+                name: "OutbeScout",
+                url: "https://s1.testnet.outbe.net/",
+                apiUrl: "https://s1.testnet.outbe.net/api/v2.",
+                family: ExplorerFamily.Blockscout,
+            },
+        ],
     },
 
 

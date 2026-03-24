@@ -135,6 +135,18 @@ export async function retrieveTargetInfo({
   );
 }
 
+/**
+ * Build explorer tx link or fallback to raw hash
+ */
+export function getTxDetails(
+  txHash: string,
+  multiProvider: MultiProvider,
+  chainId: string,
+): string {
+  const baseUrl = multiProvider.getChainMetadata(chainId).blockExplorers?.[0]?.url;
+  return baseUrl ? `${baseUrl}/tx/${txHash}` : txHash;
+}
+
 export function retrieveTokenBalance(
   tokenAddress: string,
   ownerAddress: string,

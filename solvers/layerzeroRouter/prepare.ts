@@ -4,6 +4,7 @@ import type {MultiProvider} from "@hyperlane-xyz/sdk";
 import {bytes32ToAddress} from "@hyperlane-xyz/utils";
 
 import {LayerZeroRouter__factory} from "../../typechain/factories/LayerZeroRouter__factory.js";
+import {SolverEscrow__factory} from "../../typechain/factories/SolverEscrow__factory.js";
 import type {OpenEventArgs, IntentData, LayerZeroRouterMetadata} from "./types.js";
 import {log, getTokenDecimals, getTokenSymbol, calculateSolverOutput} from "./utils.js";
 import * as OrderEncoder from "../../lib/OrderEncoder.js";
@@ -11,6 +12,7 @@ import {chainIdsToName, tradingPairs} from "../../config/index.js";
 import {
     retrieveOriginInfo,
     retrieveTargetInfo, retrieveTokenBalance,
+    getTxDetails,
 } from "../utils.js";
 import {BasePrepare, type BaseRule} from "../BasePrepare.js";
 import type {BuildRules, RulesMap} from "../types.js";
@@ -66,14 +68,44 @@ class LayerZeroRouterPrepare extends BasePrepare<
         // Calculate best output amount
         const bestOutputAmount = await this.calculateBestOutput(data);
 
-        // Check if we have enough balance for this amount
         const chainId = data.fillInstructions[0].destinationChainId.toString();
         const tokenAddress = bytes32ToAddress(data.maxSpent[0].token);
+
+        // Check escrow collateral before submitting quote
+        const escrowAddress = await this.destinationCt.solverEscrow();
+        const escrow = SolverEscrow__factory.connect(escrowAddress, this.destinationSigner);
+        const hasCollateral = await escrow.hasMinCollateral(fillerAddress, tokenAddress, bestOutputAmount);
+
+        if (!hasCollateral) {
+            const [total, locked, available] = await escrow.getBalance(fillerAddress, tokenAddress);
+            const required = await escrow.getCollateralAmount(bestOutputAmount);
+            // throw new Error(
+            //     `Insufficient escrow collateral on chain ${chainId}. ` +
+            //     `Required: ${required.toString()}, Available: ${available.toString()}, ` +
+            //     `Total: ${total.toString()}, Locked: ${locked.toString()}`
+            // );
+            this.log.warn({
+                msg: `Insufficient escrow collateral on chain ${chainId}. ` +
+                    `Required: ${required.toString()}, Available: ${available.toString()}, ` +
+                    `Total: ${total.toString()}, Locked: ${locked.toString()}`
+            });
+
+        }
+
+        // Check if we have enough balance for this amount
         const provider = this.multiProvider.getProvider(chainId);
         const balance = await retrieveTokenBalance(tokenAddress, fillerAddress, provider);
 
         if (balance.lt(bestOutputAmount)) {
-            throw new Error(`Insufficient balance on chain ${chainId} for ${tokenAddress}. Need ${bestOutputAmount.toString()}, have ${balance.toString()}`);
+            // throw new Error(`Insufficient balance on chain ${chainId} for ${tokenAddress}. Need ${bestOutputAmount.toString()}, have ${balance.toString()}`);
+            this.log.warn({
+                msg: "Insufficient balance on destination chain",
+                orderId: parsedArgs.orderId,
+                chainId,
+                tokenAddress,
+                need: bestOutputAmount.toString(),
+                have: balance.toString(),
+            });
         }
 
         this.log.info({
@@ -90,12 +122,6 @@ class LayerZeroRouterPrepare extends BasePrepare<
         );
 
         const receipt = await tx.wait();
-        const baseUrl =
-            this.destinationSigner.blockExplorers?.[0].url;
-
-        const txInfo = baseUrl
-            ? `${baseUrl}/tx/${receipt.transactionHash}`
-            : receipt.transactionHash;
 
         const quoteDecimals = await getTokenDecimals(tokenAddress, chainId, this.multiProvider);
         const quoteSymbol = await getTokenSymbol(tokenAddress, chainId, this.multiProvider);
@@ -105,7 +131,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
             orderId: parsedArgs.orderId,
             amount: bestOutputAmount.toString(),
             formattedAmount: `${formatUnits(bestOutputAmount, quoteDecimals)} ${quoteSymbol}`,
-            txDetails: txInfo,
+            txDetails: getTxDetails(receipt.transactionHash, this.multiProvider, chainId),
             txHash: receipt.transactionHash,
         });
     }
@@ -163,11 +189,12 @@ class LayerZeroRouterPrepare extends BasePrepare<
         // Ensure we meet minimum requirement
 
         if (boostedOutput.lt(minOutputAmount)) {
-            throw new Error(`Cannot fulfill order. Boosted output: ${boostedOutput.toString()}, User minimum: ${minOutputAmount.toString()}`);
+            throw new Error(`Cannot fulfill order. Boosted output: ${formatUnits(boostedOutput, inputDecimals)}, User minimum: ${formatUnits(minOutputAmount, outputDecimals)}`);
         }
 
         this.log.info({
             msg: "Calculated competitive quote",
+            exchangeRate: pair.exchangeRate,
             minRequired: minOutputAmount.toString(),
             boostedOutput: boostedOutput.toString(),
             quoteTolerance: `${(pair.quoteTolerance * 100).toFixed(1)}%`,
@@ -179,7 +206,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
     /**
      * Wait for quoting period to end by polling contract
      */
-    private async waitForQuotingEnd(orderData: any): Promise<void> {
+    private async waitForQuotingEnd(orderId: string): Promise<void> {
         const pollInterval = 1000; // Check every 1 second
 
         const quotingPeriod = await this.destinationCt.quotingPeriod();
@@ -190,7 +217,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
         });
 
         while (true) {
-            const quotingEnded = await this.destinationCt.isQuotingEnded(orderData);
+            const quotingEnded = await this.destinationCt.isQuotingEnded(orderId);
 
             if (quotingEnded) {
                 this.log.info({
@@ -201,6 +228,57 @@ class LayerZeroRouterPrepare extends BasePrepare<
 
             await new Promise(resolve => setTimeout(resolve, pollInterval));
         }
+    }
+
+    /**
+     * Claim the order on-chain after winning the auction.
+     * If the winner lacks collateral the contract resets the auction
+     * and emits AuctionRestarted instead of claiming.
+     * @returns true if claimed, false if auction was restarted
+     */
+    private async claimOrder(
+        parsedArgs: OpenEventArgs,
+        data: IntentData
+    ): Promise<boolean> {
+        const originData = data.fillInstructions[0].originData;
+
+        this.log.info({
+            msg: "Claiming order",
+            orderId: parsedArgs.orderId,
+        });
+
+        const tx = await this.destinationCt.claimOrder(
+            parsedArgs.orderId,
+            originData
+        );
+
+        const receipt = await tx.wait();
+        const _chainId = data.fillInstructions[0].destinationChainId.toString();
+        const txDetails = getTxDetails(receipt.transactionHash, this.multiProvider, _chainId);
+
+        // Check if auction was restarted (winner lacked collateral)
+        const restartedEvent = receipt.events?.find(
+            (e: any) => e.event === "AuctionRestarted"
+        );
+
+        if (restartedEvent) {
+            this.log.warn({
+                msg: "Auction restarted — winner disqualified for insufficient collateral",
+                orderId: parsedArgs.orderId,
+                disqualifiedSolver: restartedEvent.args?.disqualifiedSolver,
+                txDetails,
+                txHash: receipt.transactionHash,
+            });
+            return false;
+        }
+
+        this.log.info({
+            msg: "Order claimed",
+            orderId: parsedArgs.orderId,
+            txDetails,
+            txHash: receipt.transactionHash,
+        });
+        return true;
     }
 
     /**
@@ -217,8 +295,8 @@ class LayerZeroRouterPrepare extends BasePrepare<
         const orderData = OrderEncoder.decode(originData);
 
         // Check if there are any quotes
-        const hasQuotes = await this.destinationCt.hasQuotes(parsedArgs.orderId);
-        if (!hasQuotes) {
+        const quoteCount = await this.destinationCt.getQuoteCount(parsedArgs.orderId);
+        if (quoteCount.eq(0)) {
             this.log.info({
                 msg: "No quotes submitted - cannot fill",
                 orderId: parsedArgs.orderId,
@@ -229,7 +307,6 @@ class LayerZeroRouterPrepare extends BasePrepare<
         // Get winner from contract
         const [winnerAddress, winningAmount] = await this.destinationCt.getWinner(
             parsedArgs.orderId,
-            orderData
         );
 
         const isWinner =
@@ -255,7 +332,6 @@ class LayerZeroRouterPrepare extends BasePrepare<
         if (!isWinner) {
             return undefined;
         }
-
 
         return winningAmount;
     }
@@ -293,6 +369,89 @@ class LayerZeroRouterPrepare extends BasePrepare<
 
 
     /**
+     * Wait for AuctionRestarted event after losing the auction.
+     * Winner may get disqualified during claim, restarting the auction.
+     */
+    private waitForAuctionRestart(orderId: string): Promise<boolean> {
+        const TIMEOUT_MS = 30_000;
+
+        this.log.info({
+            msg: "Waiting for possible auction restart",
+            orderId,
+            timeoutMs: TIMEOUT_MS,
+        });
+
+        return new Promise<boolean>((resolve) => {
+            const filter = this.destinationCt.filters.AuctionRestarted(orderId);
+
+            const timeout = setTimeout(() => {
+                this.destinationCt.off(filter, handler);
+                resolve(false);
+            }, TIMEOUT_MS);
+
+            const handler = () => {
+                clearTimeout(timeout);
+                this.destinationCt.off(filter, handler);
+                this.log.info({
+                    msg: "AuctionRestarted event received, re-entering auction",
+                    orderId,
+                });
+                resolve(true);
+            };
+
+            this.destinationCt.on(filter, handler);
+        });
+    }
+
+    /**
+     * Run one auction round: submit quote (if needed) → wait → check winner → claim
+     * @returns shouldFill + winningAmount if claimed, or loops again on AuctionRestarted
+     */
+    private async runAuctionRound(
+        parsedArgs: OpenEventArgs,
+        data: IntentData,
+    ): Promise<{ shouldFill: boolean; winningAmount?: BigNumber }> {
+        // PHASE DETECTION: Check if quoting period has ended
+        const quotingEnded = await this.destinationCt.isQuotingEnded(parsedArgs.orderId);
+
+        if (quotingEnded) {
+            this.log.info({
+                msg: "Quoting already ended - checking winner directly",
+                orderId: parsedArgs.orderId,
+            });
+        } else {
+            this.log.info({
+                msg: "Quoting phase active",
+                orderId: parsedArgs.orderId,
+            });
+
+            await this.submitQuote(parsedArgs, data);
+            await this.waitForQuotingEnd(parsedArgs.orderId);
+        }
+
+        const winningAmount = await this.isWinner(parsedArgs, data);
+
+        if (!winningAmount) {
+            const restarted = await this.waitForAuctionRestart(parsedArgs.orderId);
+            if (restarted) {
+                return this.runAuctionRound(parsedArgs, data);
+            }
+            return {shouldFill: false};
+        }
+        // wait 1 second to avoid race condition with claiming
+        // await new Promise(resolve => setTimeout(resolve, 1000));
+        const claimed = await this.claimOrder(parsedArgs, data);
+
+        if (claimed) {
+            return {shouldFill: true, winningAmount};
+        }
+
+        // We were disqualified (insufficient collateral) — don't retry
+
+        return {shouldFill: false};
+    }
+
+    /**
      * Prepare order for filling - handles auction logic
      * Returns object with shouldFill flag and winningAmount if won
      */
@@ -307,10 +466,6 @@ class LayerZeroRouterPrepare extends BasePrepare<
                 fillInstructions: parsedArgs.resolvedOrder.fillInstructions,
                 maxSpent: parsedArgs.resolvedOrder.maxSpent,
             };
-
-            // Decode order data to check auction phase
-            const originData = data.fillInstructions[0].originData;
-            const orderData = OrderEncoder.decode(originData);
 
             // Retrieve and log origin/target info
             const origin = await this.retrieveOriginInfo(parsedArgs);
@@ -335,35 +490,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
                 this.destinationSigner
             );
 
-            // PHASE DETECTION: Check if quoting period has ended
-            const quotingEnded = await this.destinationCt.isQuotingEnded(orderData);
-
-            if (quotingEnded) {
-                // Quoting already ended, skip to winner check
-                this.log.info({
-                    msg: "Quoting already ended - checking winner directly",
-                    orderId: parsedArgs.orderId,
-                });
-            } else {
-                // QUOTING PHASE: Submit quote and wait for period to end
-                this.log.info({
-                    msg: "Quoting phase active",
-                    orderId: parsedArgs.orderId,
-                });
-
-                await this.submitQuote(parsedArgs, data);
-
-                // Wait for quoting period to end
-                await this.waitForQuotingEnd(orderData);
-            }
-
-            const winningAmount = await this.isWinner(parsedArgs, data);
-
-            if (winningAmount) {
-                return {shouldFill: true, winningAmount};
-            } else {
-                return {shouldFill: false};
-            }
+            return await this.runAuctionRound(parsedArgs, data);
         } catch (error: any) {
             this.log.error({
                 msg: "Cannot process order - validation failed",

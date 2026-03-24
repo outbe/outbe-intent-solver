@@ -17,6 +17,19 @@
   },
   {
     "type": "function",
+    "name": "CLAIMED",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "COMPACT",
     "inputs": [],
     "outputs": [
@@ -141,6 +154,43 @@
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "auctionStartedAt",
+    "inputs": [
+      {
+        "name": "orderId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "claimOrder",
+    "inputs": [
+      {
+        "name": "_orderId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "_originData",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -313,76 +363,9 @@
     "name": "getQuotingDeadline",
     "inputs": [
       {
-        "name": "orderData",
-        "type": "tuple",
-        "internalType": "struct OrderData",
-        "components": [
-          {
-            "name": "sender",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "recipient",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "inputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "outputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "amountIn",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "amountOut",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "senderNonce",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "originDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationSettler",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "fillDeadline",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "createdAt",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "data",
-            "type": "bytes",
-            "internalType": "bytes"
-          }
-        ]
+        "name": "orderId",
+        "type": "bytes32",
+        "internalType": "bytes32"
       }
     ],
     "outputs": [
@@ -402,78 +385,6 @@
         "name": "orderId",
         "type": "bytes32",
         "internalType": "bytes32"
-      },
-      {
-        "name": "orderData",
-        "type": "tuple",
-        "internalType": "struct OrderData",
-        "components": [
-          {
-            "name": "sender",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "recipient",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "inputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "outputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "amountIn",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "amountOut",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "senderNonce",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "originDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationSettler",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "fillDeadline",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "createdAt",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "data",
-            "type": "bytes",
-            "internalType": "bytes"
-          }
-        ]
       }
     ],
     "outputs": [
@@ -486,25 +397,6 @@
         "name": "amount",
         "type": "uint256",
         "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "hasQuotes",
-    "inputs": [
-      {
-        "name": "orderId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
@@ -594,165 +486,12 @@
   },
   {
     "type": "function",
-    "name": "isOrderExpired",
-    "inputs": [
-      {
-        "name": "orderData",
-        "type": "tuple",
-        "internalType": "struct OrderData",
-        "components": [
-          {
-            "name": "sender",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "recipient",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "inputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "outputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "amountIn",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "amountOut",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "senderNonce",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "originDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationSettler",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "fillDeadline",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "createdAt",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "data",
-            "type": "bytes",
-            "internalType": "bytes"
-          }
-        ]
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "isQuotingEnded",
     "inputs": [
       {
-        "name": "orderData",
-        "type": "tuple",
-        "internalType": "struct OrderData",
-        "components": [
-          {
-            "name": "sender",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "recipient",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "inputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "outputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "amountIn",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "amountOut",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "senderNonce",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "originDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationSettler",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "fillDeadline",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "createdAt",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "data",
-            "type": "bytes",
-            "internalType": "bytes"
-          }
-        ]
+        "name": "orderId",
+        "type": "bytes32",
+        "internalType": "bytes32"
       }
     ],
     "outputs": [
@@ -1363,7 +1102,7 @@
       {
         "name": "",
         "type": "address",
-        "internalType": "contract ISolverDepositEscrow"
+        "internalType": "contract ISolverEscrow"
       }
     ],
     "stateMutability": "view"
@@ -1443,11 +1182,6 @@
             "internalType": "uint32"
           },
           {
-            "name": "createdAt",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
             "name": "data",
             "type": "bytes",
             "internalType": "bytes"
@@ -1497,7 +1231,7 @@
   },
   {
     "type": "event",
-    "name": "AuctionEnded",
+    "name": "AuctionRestarted",
     "inputs": [
       {
         "name": "orderId",
@@ -1506,16 +1240,10 @@
         "internalType": "bytes32"
       },
       {
-        "name": "winner",
+        "name": "disqualifiedSolver",
         "type": "address",
         "indexed": true,
         "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -1765,6 +1493,31 @@
   },
   {
     "type": "event",
+    "name": "OrderClaimed",
+    "inputs": [
+      {
+        "name": "orderId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "winner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "outputAmount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "OwnershipTransferred",
     "inputs": [
       {
@@ -1967,6 +1720,11 @@
   {
     "type": "error",
     "name": "InvalidEndpointCall",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidFillDeadline",
     "inputs": []
   },
   {
