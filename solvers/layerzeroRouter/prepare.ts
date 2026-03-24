@@ -194,6 +194,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
 
         this.log.info({
             msg: "Calculated competitive quote",
+            exchangeRate: pair.exchangeRate,
             minRequired: minOutputAmount.toString(),
             boostedOutput: boostedOutput.toString(),
             quoteTolerance: `${(pair.quoteTolerance * 100).toFixed(1)}%`,
@@ -368,6 +369,41 @@ class LayerZeroRouterPrepare extends BasePrepare<
 
 
     /**
+     * Wait for AuctionRestarted event after losing the auction.
+     * Winner may get disqualified during claim, restarting the auction.
+     */
+    private waitForAuctionRestart(orderId: string): Promise<boolean> {
+        const TIMEOUT_MS = 30_000;
+
+        this.log.info({
+            msg: "Waiting for possible auction restart",
+            orderId,
+            timeoutMs: TIMEOUT_MS,
+        });
+
+        return new Promise<boolean>((resolve) => {
+            const filter = this.destinationCt.filters.AuctionRestarted(orderId);
+
+            const timeout = setTimeout(() => {
+                this.destinationCt.off(filter, handler);
+                resolve(false);
+            }, TIMEOUT_MS);
+
+            const handler = () => {
+                clearTimeout(timeout);
+                this.destinationCt.off(filter, handler);
+                this.log.info({
+                    msg: "AuctionRestarted event received, re-entering auction",
+                    orderId,
+                });
+                resolve(true);
+            };
+
+            this.destinationCt.on(filter, handler);
+        });
+    }
+
+    /**
      * Run one auction round: submit quote (if needed) → wait → check winner → claim
      * @returns shouldFill + winningAmount if claimed, or loops again on AuctionRestarted
      */
@@ -396,21 +432,23 @@ class LayerZeroRouterPrepare extends BasePrepare<
         const winningAmount = await this.isWinner(parsedArgs, data);
 
         if (!winningAmount) {
+            const restarted = await this.waitForAuctionRestart(parsedArgs.orderId);
+            if (restarted) {
+                return this.runAuctionRound(parsedArgs, data);
+            }
             return {shouldFill: false};
         }
-
+        // wait 1 second to avoid race condition with claiming
+        // await new Promise(resolve => setTimeout(resolve, 1000));
         const claimed = await this.claimOrder(parsedArgs, data);
 
         if (claimed) {
             return {shouldFill: true, winningAmount};
         }
 
-        // Auction was restarted — re-enter auction loop
-        this.log.info({
-            msg: "Re-entering auction after restart",
-            orderId: parsedArgs.orderId,
-        });
-        return this.runAuctionRound(parsedArgs, data);
+        // We were disqualified (insufficient collateral) — don't retry
+
+        return {shouldFill: false};
     }
 
     /**

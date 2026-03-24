@@ -38,7 +38,7 @@ export const tradingPairs: TradingPair[] = [
         originChain: "outbetestnet",
         destinationChain: "bsctestnet",
         inputToken: "0x0000000000000000000000000000000000000000", // Native COEN
-        outputToken: "0xcbCA050D4e7F3D025131c605bAf257829A7Fbb49", // USD0 Test Token on BSC
+        outputToken: "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae", // USDT MOCK on BSC
         exchangeRate: coenUsdRate,
         quoteTolerance: 0.01, //%1
     },
@@ -46,7 +46,7 @@ export const tradingPairs: TradingPair[] = [
     {
         originChain: "bsctestnet",
         destinationChain: "outbetestnet",
-        inputToken: "0xcbCA050D4e7F3D025131c605bAf257829A7Fbb49",
+        inputToken: "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae",
         outputToken: "0x0000000000000000000000000000000000000000",
         exchangeRate: parseFloat((1 / coenUsdRate).toFixed(6)),
         quoteTolerance: 0.01, //%1
@@ -56,8 +56,8 @@ export const tradingPairs: TradingPair[] = [
     {
         originChain: "outbetestnet",
         destinationChain: "bsctestnet",
-        inputToken: "0x74c8af2F5D7288711795048337e5580CbcB9EB02", // USD0 Test Token on Outbe
-        outputToken: "0xcbCA050D4e7F3D025131c605bAf257829A7Fbb49", // USD0 Test Token on BSC
+        inputToken: "0x8958643e5e4ea64787Aa9559fd99E97e2082D30D", // USD0 Test Token on Outbe
+        outputToken: "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae", // USDT MOCK on BSC
         exchangeRate: 1,
         quoteTolerance: 0,
     },
@@ -65,8 +65,8 @@ export const tradingPairs: TradingPair[] = [
     {
         originChain: "bsctestnet",
         destinationChain: "outbetestnet",
-        inputToken: "0xcbCA050D4e7F3D025131c605bAf257829A7Fbb49",
-        outputToken: "0x74c8af2F5D7288711795048337e5580CbcB9EB02",
+        inputToken: "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae",
+        outputToken: "0x8958643e5e4ea64787Aa9559fd99E97e2082D30D",
         exchangeRate: 1,
         quoteTolerance: 0,
     },

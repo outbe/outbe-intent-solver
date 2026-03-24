@@ -31,6 +31,7 @@ export class NonceKeeperWallet extends Wallet {
 
   async sendTransaction(
     transaction: Deferrable<TransactionRequest>,
+    _retryCount = 0,
   ): Promise<TransactionResponse> {
     try {
       // this check is necessary in order to not generate new nonces when a tx is going to fail
@@ -45,7 +46,22 @@ export class NonceKeeperWallet extends Wallet {
 
     log.debug({ msg: "transaction", transaction });
 
-    return super.sendTransaction(transaction);
+    try {
+      return await super.sendTransaction(transaction);
+    } catch (error: any) {
+      const message = extractErrorMessage(error);
+      if (message.match(/incorrect account sequence/i) && _retryCount < 3) {
+        log.warn({
+          msg: "Incorrect account sequence, resetting nonce and retrying",
+          retry: _retryCount + 1,
+        });
+        const chainId = await this.getChainId();
+        delete nonces[chainId];
+        transaction.nonce = undefined;
+        return this.sendTransaction(transaction, _retryCount + 1);
+      }
+      throw error;
+    }
   }
 
   static override fromMnemonic(
@@ -63,9 +79,7 @@ export class NonceKeeperWallet extends Wallet {
   }
 }
 
-function checkError(error: any, params: any): any {
-  const transaction = params.transaction || params.signedTransaction;
-
+function extractErrorMessage(error: any): string {
   let message = error.message;
   if (error.code === Logger.errors.SERVER_ERROR && error.error && typeof(error.error.message) === "string") {
       message = error.error.message;
@@ -74,7 +88,12 @@ function checkError(error: any, params: any): any {
   } else if (typeof(error.responseText) === "string") {
       message = error.responseText;
   }
-  message = (message || "").toLowerCase();
+  return (message || "").toLowerCase();
+}
+
+function checkError(error: any, params: any): any {
+  const transaction = params.transaction || params.signedTransaction;
+  const message = extractErrorMessage(error);
 
   // "insufficient funds for gas * price + value + cost(data)"
   if (message.match(/insufficient funds|base fee exceeds gas limit/i)) {
