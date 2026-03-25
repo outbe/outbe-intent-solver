@@ -1,10 +1,7 @@
-import { HashZero } from "@ethersproject/constants";
 import { bytes32ToAddress } from "@hyperlane-xyz/utils";
 
 import { LayerZeroRouter__factory } from "../../../typechain/factories/LayerZeroRouter__factory.js";
 import { LayerZeroRouterRule } from "../prepare.js";
-
-const UNKNOWN = HashZero;
 
 export function intentNotFilled(): LayerZeroRouterRule {
   return async (parsedArgs, context) => {
@@ -20,11 +17,15 @@ export function intentNotFilled(): LayerZeroRouterRule {
       filler,
     );
 
-    const orderStatus = await destination.orderStatus(parsedArgs.orderId);
+    const [orderStatus, UNKNOWN, OPENED] = await Promise.all([
+      destination.orderStatus(parsedArgs.orderId),
+      destination.UNKNOWN(),
+      destination.OPENED(),
+    ]);
 
-    if (orderStatus !== UNKNOWN) {
-      return { error: "Intent already filled", success: false };
+    if (orderStatus !== UNKNOWN && orderStatus !== OPENED) {
+      return { error: "Intent already processed", success: false };
     }
-    return { data: "Intent not yet filled", success: true };
+    return { data: "Intent not yet processed", success: true };
   };
 }

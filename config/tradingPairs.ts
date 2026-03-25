@@ -71,6 +71,25 @@ export const tradingPairs: TradingPair[] = [
         quoteTolerance: 0,
     },
 
+    // SAME CHAIN USD0<->COEN
+
+    {
+        originChain: "outbetestnet",
+        destinationChain: "outbetestnet",
+        inputToken: "0x0000000000000000000000000000000000000000", // COEN
+        outputToken: "0x8958643e5e4ea64787Aa9559fd99E97e2082D30D", // USDT0
+        exchangeRate: coenUsdRate,
+        quoteTolerance: 0,
+    },
+
+    {
+        originChain: "outbetestnet",
+        destinationChain: "outbetestnet",
+        inputToken: "0x8958643e5e4ea64787Aa9559fd99E97e2082D30D", // USDT0
+        outputToken: "0x0000000000000000000000000000000000000000", // COEN
+        exchangeRate: parseFloat((1 / coenUsdRate).toFixed(6)),
+        quoteTolerance: 0,
+    },
 
 
 ];

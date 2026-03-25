@@ -194,35 +194,48 @@ class LayerZeroRouterFiller extends BaseFiller<
                                 filler,
                             );
                             try {
-                                // Get fillerData from filled order
-                                const filledOrder = await destination.filledOrders(
-                                    parsedArgs.orderId,
-                                );
+                                const isSameChain = parsedArgs.resolvedOrder.originChainId.toString() === destinationChain;
 
-                                // Calculate LayerZero fee for settlement
-                                const fee = await quoteSettleFee(
-                                    destination,
-                                    parsedArgs.resolvedOrder.originChainId,
-                                    parsedArgs.orderId,
-                                    filledOrder.fillerData,
-                                );
+                                let fee = BigNumber.from(0);
+                                if (!isSameChain) {
+                                    // Get fillerData from filled order
+                                    const filledOrder = await destination.filledOrders(
+                                        parsedArgs.orderId,
+                                    );
 
-                                // Settle with LayerZero fee
+                                    // Calculate LayerZero fee for settlement
+                                    fee = await quoteSettleFee(
+                                        destination,
+                                        parsedArgs.resolvedOrder.originChainId,
+                                        parsedArgs.orderId,
+                                        filledOrder.fillerData,
+                                    );
+                                }
+
                                 const tx = await destination.settle([parsedArgs.orderId], {
                                     value: fee,
                                 });
 
                                 const receipt = await tx.wait();
 
-                                this.log.info({
-                                    msg: "Settlement message sent to LayerZero",
-                                    intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
-                                    status: "Waiting for LayerZero delivery to origin chain",
-                                    txDetails: getTxDetails(receipt.transactionHash, this.multiProvider, destinationChain),
-                                    txHash: receipt.transactionHash,
-                                });
+                                if (isSameChain) {
+                                    this.log.info({
+                                        msg: "Order settled (same-chain)",
+                                        intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
+                                        txDetails: getTxDetails(receipt.transactionHash, this.multiProvider, destinationChain),
+                                        txHash: receipt.transactionHash,
+                                    });
+                                } else {
+                                    this.log.info({
+                                        msg: "Settlement message sent to LayerZero",
+                                        intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
+                                        status: "Waiting for LayerZero delivery to origin chain",
+                                        txDetails: getTxDetails(receipt.transactionHash, this.multiProvider, destinationChain),
+                                        txHash: receipt.transactionHash,
+                                    });
 
-                                this.waitForSettled(parsedArgs.orderId, originChainName, parsedArgs.resolvedOrder);
+                                    this.waitForSettled(parsedArgs.orderId, originChainName, parsedArgs.resolvedOrder);
+                                }
                             } catch (error) {
                                 this.log.error({
                                     msg: `Failed settling`,
