@@ -8,7 +8,7 @@ import {SolverEscrow__factory} from "../../typechain/factories/SolverEscrow__fac
 import type {OpenEventArgs, IntentData, LayerZeroRouterMetadata} from "./types.js";
 import {log, getTokenDecimals, getTokenSymbol, calculateSolverOutput} from "./utils.js";
 import * as OrderEncoder from "../../lib/OrderEncoder.js";
-import {chainIdsToName, tradingPairs} from "../../config/index.js";
+import {chainIdsToName, getTradingPairs} from "../../config/index.js";
 import {
     retrieveOriginInfo,
     retrieveTargetInfo, retrieveTokenBalance,
@@ -161,7 +161,8 @@ class LayerZeroRouterPrepare extends BasePrepare<
         const minOutputAmount = orderData.amountOut;
 
         // Find trading pair (already validated by checkExchangeRate rule)
-        const pair = tradingPairs.find(
+        const pairs = await getTradingPairs();
+        const pair = pairs.find(
             (p) =>
                 p.originChain === originChainName &&
                 p.destinationChain === destinationChainName &&
@@ -189,7 +190,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
         // Ensure we meet minimum requirement
 
         if (boostedOutput.lt(minOutputAmount)) {
-            throw new Error(`Cannot fulfill order. Boosted output: ${formatUnits(boostedOutput, inputDecimals)}, User minimum: ${formatUnits(minOutputAmount, outputDecimals)}`);
+            throw new Error(`Cannot fulfill order. Boosted output: ${formatUnits(boostedOutput, outputDecimals)}, User minimum: ${formatUnits(minOutputAmount, outputDecimals)}`);
         }
 
         this.log.info({
@@ -207,7 +208,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
      * Wait for quoting period to end by polling contract
      */
     private async waitForQuotingEnd(orderId: string): Promise<void> {
-        const pollInterval = 1000; // Check every 1 second
+        const pollInterval = this.defaultPollInterval;
 
         const quotingPeriod = await this.destinationCt.quotingPeriod();
 
