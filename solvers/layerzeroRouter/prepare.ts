@@ -8,7 +8,7 @@ import {SolverEscrow__factory} from "../../typechain/factories/SolverEscrow__fac
 import type {OpenEventArgs, IntentData, LayerZeroRouterMetadata} from "./types.js";
 import {log, getTokenDecimals, getTokenSymbol, calculateSolverOutput} from "./utils.js";
 import * as OrderEncoder from "../../lib/OrderEncoder.js";
-import {chainIdsToName, tradingPairs} from "../../config/index.js";
+import {chainIdsToName, getTradingPairs} from "../../config/index.js";
 import {
     retrieveOriginInfo,
     retrieveTargetInfo, retrieveTokenBalance,
@@ -161,7 +161,8 @@ class LayerZeroRouterPrepare extends BasePrepare<
         const minOutputAmount = orderData.amountOut;
 
         // Find trading pair (already validated by checkExchangeRate rule)
-        const pair = tradingPairs.find(
+        const pairs = await getTradingPairs();
+        const pair = pairs.find(
             (p) =>
                 p.originChain === originChainName &&
                 p.destinationChain === destinationChainName &&

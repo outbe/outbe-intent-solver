@@ -3,7 +3,7 @@ import z from "zod";
 import allowBlockListsGlobal from "./allowBlockLists.js";
 import { chainMetadata } from "./chainMetadata.js";
 import { ConfigSchema } from "./types.js";
-import { tradingPairs } from "./tradingPairs.js";
+import { getTradingPairs } from "./tradingPairs.js";
 
 dotenvFlow.config();
 
@@ -82,4 +82,4 @@ const { chainIds, chainNames, chainIdsToName } = Object.entries(
   { chainNames: [], chainIds: {}, chainIdsToName: {} },
 );
 
-export { chainIds, chainIdsToName, chainNames, tradingPairs };
+export { chainIds, chainIdsToName, chainNames, getTradingPairs };

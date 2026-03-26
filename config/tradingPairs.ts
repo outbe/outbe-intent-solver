@@ -29,67 +29,68 @@ export interface TradingPair {
     quoteTolerance: number; // Extra % to offer in auction to win (0.02 = 2% more)
 }
 
-// TODO: temporary solution — fetch rate from Oracle at startup, later move to a dedicated service
-const coenUsdRate = await getOracleRate("COEN/USDC") ?? 0.012;
+const FALLBACK_COEN_USD = 0.012;
 
-export const tradingPairs: TradingPair[] = [
-    // USD0<->COEN
-    {
-        originChain: "outbetestnet",
-        destinationChain: "bsctestnet",
-        inputToken: "0x0000000000000000000000000000000000000000", // Native COEN
-        outputToken: "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae", // USDT MOCK on BSC
-        exchangeRate: coenUsdRate,
-        quoteTolerance: 0.01, //%1
-    },
+export async function getTradingPairs(): Promise<TradingPair[]> {
+    const coenUsdRate = await getOracleRate("COEN/USDC") ?? FALLBACK_COEN_USD;
 
-    {
-        originChain: "bsctestnet",
-        destinationChain: "outbetestnet",
-        inputToken: "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae",
-        outputToken: "0x0000000000000000000000000000000000000000",
-        exchangeRate: parseFloat((1 / coenUsdRate).toFixed(6)),
-        quoteTolerance: 0.01, //%1
-    },
-        //USD0 <-> USD0
+    return [
+        // COEN <-> USDT (cross-chain)
+        {
+            originChain: "outbetestnet",
+            destinationChain: "bsctestnet",
+            inputToken: "0x0000000000000000000000000000000000000000", // Native COEN
+            outputToken: "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae", // USDT MOCK on BSC
+            exchangeRate: coenUsdRate,
+            quoteTolerance: 0.01,
+        },
 
-    {
-        originChain: "outbetestnet",
-        destinationChain: "bsctestnet",
-        inputToken: "0x8958643e5e4ea64787Aa9559fd99E97e2082D30D", // USD0 Test Token on Outbe
-        outputToken: "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae", // USDT MOCK on BSC
-        exchangeRate: 1,
-        quoteTolerance: 0,
-    },
+        {
+            originChain: "bsctestnet",
+            destinationChain: "outbetestnet",
+            inputToken: "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae",
+            outputToken: "0x0000000000000000000000000000000000000000",
+            exchangeRate: parseFloat((1 / coenUsdRate).toFixed(6)),
+            quoteTolerance: 0.01,
+        },
 
-    {
-        originChain: "bsctestnet",
-        destinationChain: "outbetestnet",
-        inputToken: "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae",
-        outputToken: "0x8958643e5e4ea64787Aa9559fd99E97e2082D30D",
-        exchangeRate: 1,
-        quoteTolerance: 0,
-    },
+        // USD0 <-> USDT (cross-chain)
+        {
+            originChain: "outbetestnet",
+            destinationChain: "bsctestnet",
+            inputToken: "0x8958643e5e4ea64787Aa9559fd99E97e2082D30D", // USD0 Test Token on Outbe
+            outputToken: "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae", // USDT MOCK on BSC
+            exchangeRate: 1,
+            quoteTolerance: 0,
+        },
 
-    // SAME CHAIN USD0<->COEN
+        {
+            originChain: "bsctestnet",
+            destinationChain: "outbetestnet",
+            inputToken: "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae",
+            outputToken: "0x8958643e5e4ea64787Aa9559fd99E97e2082D30D",
+            exchangeRate: 1,
+            quoteTolerance: 0,
+        },
 
-    {
-        originChain: "outbetestnet",
-        destinationChain: "outbetestnet",
-        inputToken: "0x0000000000000000000000000000000000000000", // COEN
-        outputToken: "0x8958643e5e4ea64787Aa9559fd99E97e2082D30D", // USDT0
-        exchangeRate: coenUsdRate,
-        quoteTolerance: 0,
-    },
+        // COEN <-> USD0 (same-chain)
+        {
+            originChain: "outbetestnet",
+            destinationChain: "outbetestnet",
+            inputToken: "0x0000000000000000000000000000000000000000", // COEN
+            outputToken: "0x8958643e5e4ea64787Aa9559fd99E97e2082D30D", // USD0
+            exchangeRate: coenUsdRate,
+            quoteTolerance: 0,
+        },
 
-    {
-        originChain: "outbetestnet",
-        destinationChain: "outbetestnet",
-        inputToken: "0x8958643e5e4ea64787Aa9559fd99E97e2082D30D", // USDT0
-        outputToken: "0x0000000000000000000000000000000000000000", // COEN
-        exchangeRate: parseFloat((1 / coenUsdRate).toFixed(6)),
-        quoteTolerance: 0,
-    },
+        {
+            originChain: "outbetestnet",
+            destinationChain: "outbetestnet",
+            inputToken: "0x8958643e5e4ea64787Aa9559fd99E97e2082D30D", // USD0
+            outputToken: "0x0000000000000000000000000000000000000000", // COEN
+            exchangeRate: parseFloat((1 / coenUsdRate).toFixed(6)),
+            quoteTolerance: 0,
+        },
+    ];
+}
 
-
-];
