@@ -189,7 +189,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
         // Ensure we meet minimum requirement
 
         if (boostedOutput.lt(minOutputAmount)) {
-            throw new Error(`Cannot fulfill order. Boosted output: ${formatUnits(boostedOutput, inputDecimals)}, User minimum: ${formatUnits(minOutputAmount, outputDecimals)}`);
+            throw new Error(`Cannot fulfill order. Boosted output: ${formatUnits(boostedOutput, outputDecimals)}, User minimum: ${formatUnits(minOutputAmount, outputDecimals)}`);
         }
 
         this.log.info({
@@ -207,7 +207,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
      * Wait for quoting period to end by polling contract
      */
     private async waitForQuotingEnd(orderId: string): Promise<void> {
-        const pollInterval = 1000; // Check every 1 second
+        const pollInterval = this.defaultPollInterval;
 
         const quotingPeriod = await this.destinationCt.quotingPeriod();
 

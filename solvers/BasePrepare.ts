@@ -33,6 +33,8 @@ export abstract class BasePrepare<
 > {
   rules: Array<BaseRule<TMetadata, TParsedArgs, TIntentData>> = [];
 
+  protected defaultPollInterval: number = 3000;
+
   protected constructor(
     readonly multiProvider: MultiProvider,
     readonly metadata: TMetadata,
