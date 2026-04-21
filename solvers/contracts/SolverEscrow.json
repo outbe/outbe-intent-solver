@@ -614,6 +614,11 @@
   },
   {
     "type": "error",
+    "name": "InsufficientCollateral",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InvalidAmount",
     "inputs": []
   },
@@ -640,6 +645,11 @@
   {
     "type": "error",
     "name": "OperatorNotApproved",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "WithdrawalFailed",
     "inputs": []
   }
 ]

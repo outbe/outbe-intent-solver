@@ -4,6 +4,7 @@ import type {MultiProvider} from "@hyperlane-xyz/sdk";
 import {bytes32ToAddress} from "@hyperlane-xyz/utils";
 
 import {LayerZeroRouter__factory} from "../../typechain/factories/LayerZeroRouter__factory.js";
+import {Auction__factory} from "../../typechain/factories/Auction__factory.js";
 import {SolverEscrow__factory} from "../../typechain/factories/SolverEscrow__factory.js";
 import type {OpenEventArgs, IntentData, LayerZeroRouterMetadata} from "./types.js";
 import {log, getTokenDecimals, getTokenSymbol, calculateSolverOutput} from "./utils.js";
@@ -26,6 +27,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
     IntentData
 > {
     private destinationCt!: any;
+    private auctionCt!: any;
     private destinationSigner!: any;
 
     constructor(
@@ -52,7 +54,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
         const orderData = OrderEncoder.decode(originData);
 
         // Check if already quoted (on-chain deduplication)
-        const alreadyQuoted = await this.destinationCt.hasSolverQuoted(
+        const alreadyQuoted = await this.auctionCt.hasSolverQuoted(
             parsedArgs.orderId,
             fillerAddress
         );
@@ -210,7 +212,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
     private async waitForQuotingEnd(orderId: string): Promise<void> {
         const pollInterval = this.defaultPollInterval;
 
-        const quotingPeriod = await this.destinationCt.quotingPeriod();
+        const quotingPeriod = await this.auctionCt.quotingPeriod();
 
         this.log.info({
             msg: "Waiting for quoting period to end",
@@ -218,7 +220,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
         });
 
         while (true) {
-            const quotingEnded = await this.destinationCt.isQuotingEnded(orderId);
+            const quotingEnded = await this.auctionCt.isQuotingEnded(orderId);
 
             if (quotingEnded) {
                 this.log.info({
@@ -248,9 +250,12 @@ class LayerZeroRouterPrepare extends BasePrepare<
             orderId: parsedArgs.orderId,
         });
 
+        const gasCost = await this.auctionCt.getOrderGasCost(parsedArgs.orderId);
+
         const tx = await this.destinationCt.claimOrder(
             parsedArgs.orderId,
-            originData
+            originData,
+            {value: gasCost}
         );
 
         const receipt = await tx.wait();
@@ -296,7 +301,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
         const orderData = OrderEncoder.decode(originData);
 
         // Check if there are any quotes
-        const quoteCount = await this.destinationCt.getQuoteCount(parsedArgs.orderId);
+        const quoteCount = await this.auctionCt.getQuoteCount(parsedArgs.orderId);
         if (quoteCount.eq(0)) {
             this.log.info({
                 msg: "No quotes submitted - cannot fill",
@@ -306,7 +311,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
         }
 
         // Get winner from contract
-        const [winnerAddress, winningAmount] = await this.destinationCt.getWinner(
+        const [winnerAddress, winningAmount] = await this.auctionCt.getWinner(
             parsedArgs.orderId,
         );
 
@@ -383,16 +388,16 @@ class LayerZeroRouterPrepare extends BasePrepare<
         });
 
         return new Promise<boolean>((resolve) => {
-            const filter = this.destinationCt.filters.AuctionRestarted(orderId);
+            const filter = this.auctionCt.filters.AuctionRestarted(orderId);
 
             const timeout = setTimeout(() => {
-                this.destinationCt.off(filter, handler);
+                this.auctionCt.off(filter, handler);
                 resolve(false);
             }, TIMEOUT_MS);
 
             const handler = () => {
                 clearTimeout(timeout);
-                this.destinationCt.off(filter, handler);
+                this.auctionCt.off(filter, handler);
                 this.log.info({
                     msg: "AuctionRestarted event received, re-entering auction",
                     orderId,
@@ -400,7 +405,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
                 resolve(true);
             };
 
-            this.destinationCt.on(filter, handler);
+            this.auctionCt.on(filter, handler);
         });
     }
 
@@ -413,7 +418,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
         data: IntentData,
     ): Promise<{ shouldFill: boolean; winningAmount?: BigNumber }> {
         // PHASE DETECTION: Check if quoting period has ended
-        const quotingEnded = await this.destinationCt.isQuotingEnded(parsedArgs.orderId);
+        const quotingEnded = await this.auctionCt.isQuotingEnded(parsedArgs.orderId);
 
         if (quotingEnded) {
             this.log.info({
@@ -490,6 +495,9 @@ class LayerZeroRouterPrepare extends BasePrepare<
                 destinationSettler,
                 this.destinationSigner
             );
+
+            const auctionAddress = await this.destinationCt.auction();
+            this.auctionCt = Auction__factory.connect(auctionAddress, this.destinationSigner);
 
             return await this.runAuctionRound(parsedArgs, data);
         } catch (error: any) {

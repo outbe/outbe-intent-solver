@@ -17,6 +17,19 @@
   },
   {
     "type": "function",
+    "name": "AUCTION",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IAuction"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "CLAIMED",
     "inputs": [],
     "outputs": [
@@ -108,6 +121,19 @@
   },
   {
     "type": "function",
+    "name": "SOLVER_ESCROW",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract ISolverEscrow"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "UNKNOWN",
     "inputs": [],
     "outputs": [
@@ -157,25 +183,6 @@
   },
   {
     "type": "function",
-    "name": "auctionStartedAt",
-    "inputs": [
-      {
-        "name": "orderId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "claimOrder",
     "inputs": [
       {
@@ -190,7 +197,7 @@
       }
     ],
     "outputs": [],
-    "stateMutability": "nonpayable"
+    "stateMutability": "payable"
   },
   {
     "type": "function",
@@ -305,128 +312,6 @@
   },
   {
     "type": "function",
-    "name": "getQuoteCount",
-    "inputs": [
-      {
-        "name": "orderId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getQuotes",
-    "inputs": [
-      {
-        "name": "orderId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "tuple[]",
-        "internalType": "struct IAuction.Quote[]",
-        "components": [
-          {
-            "name": "solver",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "outputAmount",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "timestamp",
-            "type": "uint256",
-            "internalType": "uint256"
-          }
-        ]
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getQuotingDeadline",
-    "inputs": [
-      {
-        "name": "orderId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getWinner",
-    "inputs": [
-      {
-        "name": "orderId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "solver",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "hasSolverQuoted",
-    "inputs": [
-      {
-        "name": "orderId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "solver",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "invalidateNonces",
     "inputs": [
       {
@@ -473,25 +358,6 @@
         "name": "_sender",
         "type": "address",
         "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "isQuotingEnded",
-    "inputs": [
-      {
-        "name": "orderId",
-        "type": "bytes32",
-        "internalType": "bytes32"
       }
     ],
     "outputs": [
@@ -576,19 +442,6 @@
     ],
     "outputs": [],
     "stateMutability": "payable"
-  },
-  {
-    "type": "function",
-    "name": "maxQuotesPerOrder",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -775,19 +628,6 @@
   },
   {
     "type": "function",
-    "name": "quotingPeriod",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "refund",
     "inputs": [
       {
@@ -959,6 +799,19 @@
   },
   {
     "type": "function",
+    "name": "setAuction",
+    "inputs": [
+      {
+        "name": "_newAuction",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "setCompactConfig",
     "inputs": [
       {
@@ -1096,33 +949,20 @@
   },
   {
     "type": "function",
-    "name": "solverEscrow",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract ISolverEscrow"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "submitQuote",
     "inputs": [
       {
-        "name": "orderId",
+        "name": "_orderId",
         "type": "bytes32",
         "internalType": "bytes32"
       },
       {
-        "name": "outputAmount",
+        "name": "_outputAmount",
         "type": "uint256",
         "internalType": "uint256"
       },
       {
-        "name": "orderData",
+        "name": "_orderData",
         "type": "tuple",
         "internalType": "struct OrderData",
         "components": [
@@ -1231,16 +1071,10 @@
   },
   {
     "type": "event",
-    "name": "AuctionRestarted",
+    "name": "AuctionSet",
     "inputs": [
       {
-        "name": "orderId",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "disqualifiedSolver",
+        "name": "auction",
         "type": "address",
         "indexed": true,
         "internalType": "address"
@@ -1307,25 +1141,6 @@
         "type": "uint128",
         "indexed": false,
         "internalType": "uint128"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "MaxQuotesUpdated",
-    "inputs": [
-      {
-        "name": "oldMax",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "newMax",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -1556,50 +1371,6 @@
   },
   {
     "type": "event",
-    "name": "QuoteSubmitted",
-    "inputs": [
-      {
-        "name": "orderId",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "solver",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "QuotingPeriodUpdated",
-    "inputs": [
-      {
-        "name": "oldPeriod",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "newPeriod",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
     "name": "Refund",
     "inputs": [
       {
@@ -1670,16 +1441,10 @@
   },
   {
     "type": "event",
-    "name": "SolverEscrowUpdated",
+    "name": "SolverEscrowSet",
     "inputs": [
       {
-        "name": "oldEscrow",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "newEscrow",
+        "name": "escrow",
         "type": "address",
         "indexed": true,
         "internalType": "address"
@@ -1689,17 +1454,17 @@
   },
   {
     "type": "error",
-    "name": "AlreadyQuoted",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "BelowMinimumOutput",
     "inputs": []
   },
   {
     "type": "error",
     "name": "InsufficientCollateral",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidAuction",
     "inputs": []
   },
   {
@@ -1729,11 +1494,6 @@
   },
   {
     "type": "error",
-    "name": "InvalidMaxQuotes",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "InvalidNativeAmount",
     "inputs": []
   },
@@ -1752,11 +1512,6 @@
         "internalType": "uint16"
       }
     ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidOrderData",
-    "inputs": []
   },
   {
     "type": "error",
@@ -1802,17 +1557,7 @@
   },
   {
     "type": "error",
-    "name": "InvalidPeriod",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "LzTokenUnavailable",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "MaxQuotesReached",
     "inputs": []
   },
   {
@@ -1825,11 +1570,6 @@
         "internalType": "uint32"
       }
     ]
-  },
-  {
-    "type": "error",
-    "name": "NoQuotes",
-    "inputs": []
   },
   {
     "type": "error",
@@ -1876,22 +1616,12 @@
   },
   {
     "type": "error",
-    "name": "OrderExpired",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "OrderFillExpired",
     "inputs": []
   },
   {
     "type": "error",
     "name": "OrderFillNotExpired",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "QuotingEnded",
     "inputs": []
   },
   {
