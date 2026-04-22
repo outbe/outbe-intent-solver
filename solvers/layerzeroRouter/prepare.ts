@@ -74,23 +74,23 @@ class LayerZeroRouterPrepare extends BasePrepare<
         const tokenAddress = bytes32ToAddress(data.maxSpent[0].token);
 
         // Check escrow collateral before submitting quote
-        const escrowAddress = await this.destinationCt.solverEscrow();
+        const escrowAddress = await this.destinationCt.SOLVER_ESCROW();
         const escrow = SolverEscrow__factory.connect(escrowAddress, this.destinationSigner);
         const hasCollateral = await escrow.hasMinCollateral(fillerAddress, tokenAddress, bestOutputAmount);
 
         if (!hasCollateral) {
             const [total, locked, available] = await escrow.getBalance(fillerAddress, tokenAddress);
             const required = await escrow.getCollateralAmount(bestOutputAmount);
-            // throw new Error(
-            //     `Insufficient escrow collateral on chain ${chainId}. ` +
-            //     `Required: ${required.toString()}, Available: ${available.toString()}, ` +
-            //     `Total: ${total.toString()}, Locked: ${locked.toString()}`
-            // );
-            this.log.warn({
-                msg: `Insufficient escrow collateral on chain ${chainId}. ` +
-                    `Required: ${required.toString()}, Available: ${available.toString()}, ` +
-                    `Total: ${total.toString()}, Locked: ${locked.toString()}`
-            });
+            throw new Error(
+                `Insufficient escrow collateral on chain ${chainId}. ` +
+                `Required: ${required.toString()}, Available: ${available.toString()}, ` +
+                `Total: ${total.toString()}, Locked: ${locked.toString()}`
+            );
+            // this.log.warn({
+            //     msg: `Insufficient escrow collateral on chain ${chainId}. ` +
+            //         `Required: ${required.toString()}, Available: ${available.toString()}, ` +
+            //         `Total: ${total.toString()}, Locked: ${locked.toString()}`
+            // });
 
         }
 
@@ -496,7 +496,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
                 this.destinationSigner
             );
 
-            const auctionAddress = await this.destinationCt.auction();
+            const auctionAddress = await this.destinationCt.AUCTION();
             this.auctionCt = Auction__factory.connect(auctionAddress, this.destinationSigner);
 
             return await this.runAuctionRound(parsedArgs, data);
