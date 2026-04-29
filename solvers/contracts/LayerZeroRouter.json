@@ -856,19 +856,6 @@
   },
   {
     "type": "function",
-    "name": "setMaxQuotesPerOrder",
-    "inputs": [
-      {
-        "name": "_newMax",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "setPeer",
     "inputs": [
       {
@@ -910,19 +897,6 @@
   },
   {
     "type": "function",
-    "name": "setQuotingPeriod",
-    "inputs": [
-      {
-        "name": "_newPeriod",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "setSolverEscrow",
     "inputs": [
       {
@@ -946,91 +920,6 @@
     ],
     "outputs": [],
     "stateMutability": "payable"
-  },
-  {
-    "type": "function",
-    "name": "submitQuote",
-    "inputs": [
-      {
-        "name": "_orderId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "_outputAmount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "_orderData",
-        "type": "tuple",
-        "internalType": "struct OrderData",
-        "components": [
-          {
-            "name": "sender",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "recipient",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "inputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "outputToken",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "amountIn",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "amountOut",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "senderNonce",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "originDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationDomain",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "destinationSettler",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "fillDeadline",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "data",
-            "type": "bytes",
-            "internalType": "bytes"
-          }
-        ]
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -1459,11 +1348,6 @@
   },
   {
     "type": "error",
-    "name": "InsufficientCollateral",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "InvalidAuction",
     "inputs": []
   },
@@ -1626,7 +1510,7 @@
   },
   {
     "type": "error",
-    "name": "QuotingNotEnded",
+    "name": "RevealNotEnded",
     "inputs": []
   }
 ]

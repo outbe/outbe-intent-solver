@@ -80,6 +80,37 @@
   },
   {
     "type": "function",
+    "name": "commit",
+    "inputs": [
+      {
+        "name": "orderId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "commitHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "commitPeriod",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "distributeCashback",
     "inputs": [
       {
@@ -95,6 +126,25 @@
     ],
     "outputs": [],
     "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "getCommitDeadline",
+    "inputs": [
+      {
+        "name": "orderId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -157,18 +207,8 @@
           },
           {
             "name": "outputAmount",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "timestamp",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "gasCost",
-            "type": "uint256",
-            "internalType": "uint256"
+            "type": "uint128",
+            "internalType": "uint128"
           }
         ]
       }
@@ -177,7 +217,7 @@
   },
   {
     "type": "function",
-    "name": "getQuotingDeadline",
+    "name": "getRevealDeadline",
     "inputs": [
       {
         "name": "orderId",
@@ -220,7 +260,7 @@
   },
   {
     "type": "function",
-    "name": "hasSolverQuoted",
+    "name": "hasSolverCommitted",
     "inputs": [
       {
         "name": "orderId",
@@ -244,7 +284,7 @@
   },
   {
     "type": "function",
-    "name": "isQuotingEnded",
+    "name": "isAuctionEnded",
     "inputs": [
       {
         "name": "orderId",
@@ -289,19 +329,6 @@
   },
   {
     "type": "function",
-    "name": "quotingPeriod",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "resetAuction",
     "inputs": [
       {
@@ -320,6 +347,42 @@
   },
   {
     "type": "function",
+    "name": "reveal",
+    "inputs": [
+      {
+        "name": "orderId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "outputAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "salt",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "revealPeriod",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "router",
     "inputs": [],
     "outputs": [
@@ -330,6 +393,19 @@
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "setCommitPeriod",
+    "inputs": [
+      {
+        "name": "newPeriod",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -346,7 +422,7 @@
   },
   {
     "type": "function",
-    "name": "setQuotingPeriod",
+    "name": "setRevealPeriod",
     "inputs": [
       {
         "name": "newPeriod",
@@ -371,29 +447,6 @@
     "stateMutability": "nonpayable"
   },
   {
-    "type": "function",
-    "name": "submitQuote",
-    "inputs": [
-      {
-        "name": "orderId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "outputAmount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "solver",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
     "type": "event",
     "name": "AuctionRestarted",
     "inputs": [
@@ -405,6 +458,44 @@
       },
       {
         "name": "disqualifiedSolver",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "CommitPeriodUpdated",
+    "inputs": [
+      {
+        "name": "oldPeriod",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "newPeriod",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Committed",
+    "inputs": [
+      {
+        "name": "orderId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "solver",
         "type": "address",
         "indexed": true,
         "internalType": "address"
@@ -483,7 +574,7 @@
   },
   {
     "type": "event",
-    "name": "QuotingPeriodUpdated",
+    "name": "RevealPeriodUpdated",
     "inputs": [
       {
         "name": "oldPeriod",
@@ -502,7 +593,12 @@
   },
   {
     "type": "error",
-    "name": "AlreadyQuoted",
+    "name": "AlreadyCommitted",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "CommitPhaseEnded",
     "inputs": []
   },
   {
@@ -522,6 +618,11 @@
   },
   {
     "type": "error",
+    "name": "InvalidReveal",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "MaxQuotesReached",
     "inputs": []
   },
@@ -532,17 +633,22 @@
   },
   {
     "type": "error",
+    "name": "NotCommitted",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "OnlyAuthorized",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "QuotingEnded",
+    "name": "RevealNotEnded",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "QuotingNotEnded",
+    "name": "RevealPhaseNotActive",
     "inputs": []
   }
 ]

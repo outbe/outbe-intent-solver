@@ -7,7 +7,7 @@ import {LayerZeroRouter__factory} from "../../typechain/factories/LayerZeroRoute
 import {Auction__factory} from "../../typechain/factories/Auction__factory.js";
 import {SolverEscrow__factory} from "../../typechain/factories/SolverEscrow__factory.js";
 import type {OpenEventArgs, IntentData, LayerZeroRouterMetadata} from "./types.js";
-import {log, getTokenDecimals, getTokenSymbol, calculateSolverOutput} from "./utils.js";
+import {log, getTokenDecimals, calculateSolverOutput} from "./utils.js";
 import * as OrderEncoder from "../../lib/OrderEncoder.js";
 import {chainIdsToName, getTradingPairs} from "../../config/index.js";
 import {
@@ -18,6 +18,7 @@ import {
 import {BasePrepare, type BaseRule} from "../BasePrepare.js";
 import type {BuildRules, RulesMap} from "../types.js";
 import {metadata} from "./config/index.js";
+import {AuctionManager} from "./auction.js";
 
 export type LayerZeroRouterRule = BaseRule<LayerZeroRouterMetadata, OpenEventArgs, IntentData>;
 
@@ -27,7 +28,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
     IntentData
 > {
     private destinationCt!: any;
-    private auctionCt!: any;
+    private auctionManager!: AuctionManager;
     private destinationSigner!: any;
 
     constructor(
@@ -38,110 +39,50 @@ class LayerZeroRouterPrepare extends BasePrepare<
     }
 
     /**
-     * Submit quote during auction period
+     * Pre-commit checks: collateral and balance
      */
-    private async submitQuote(
-        parsedArgs: OpenEventArgs,
-        data: IntentData
+    private async preCommitChecks(
+        orderId: string,
+        outputAmount: BigNumber,
+        data: IntentData,
     ): Promise<void> {
-        const {originData} =
-            data.fillInstructions[0];
-
         const fillerAddress = await this.destinationSigner.getAddress();
-
-
-        // Decode order data
-        const orderData = OrderEncoder.decode(originData);
-
-        // Check if already quoted (on-chain deduplication)
-        const alreadyQuoted = await this.auctionCt.hasSolverQuoted(
-            parsedArgs.orderId,
-            fillerAddress
-        );
-
-        if (alreadyQuoted) {
-            this.log.info({
-                msg: "Already submitted quote",
-                orderId: parsedArgs.orderId,
-            });
-            return;
-        }
-
-        // Calculate best output amount
-        const bestOutputAmount = await this.calculateBestOutput(data);
-
         const chainId = data.fillInstructions[0].destinationChainId.toString();
         const tokenAddress = bytes32ToAddress(data.maxSpent[0].token);
 
-        // Check escrow collateral before submitting quote
+        // Check escrow collateral
         const escrowAddress = await this.destinationCt.SOLVER_ESCROW();
         const escrow = SolverEscrow__factory.connect(escrowAddress, this.destinationSigner);
-        const hasCollateral = await escrow.hasMinCollateral(fillerAddress, tokenAddress, bestOutputAmount);
+        const hasCollateral = await escrow.hasMinCollateral(fillerAddress, tokenAddress, outputAmount);
 
         if (!hasCollateral) {
             const [total, locked, available] = await escrow.getBalance(fillerAddress, tokenAddress);
-            const required = await escrow.getCollateralAmount(bestOutputAmount);
+            const required = await escrow.getCollateralAmount(outputAmount);
             throw new Error(
                 `Insufficient escrow collateral on chain ${chainId}. ` +
                 `Required: ${required.toString()}, Available: ${available.toString()}, ` +
                 `Total: ${total.toString()}, Locked: ${locked.toString()}`
             );
-            // this.log.warn({
-            //     msg: `Insufficient escrow collateral on chain ${chainId}. ` +
-            //         `Required: ${required.toString()}, Available: ${available.toString()}, ` +
-            //         `Total: ${total.toString()}, Locked: ${locked.toString()}`
-            // });
-
         }
 
-        // Check if we have enough balance for this amount
+        // Check balance
         const provider = this.multiProvider.getProvider(chainId);
         const balance = await retrieveTokenBalance(tokenAddress, fillerAddress, provider);
 
-        if (balance.lt(bestOutputAmount)) {
-            // throw new Error(`Insufficient balance on chain ${chainId} for ${tokenAddress}. Need ${bestOutputAmount.toString()}, have ${balance.toString()}`);
+        if (balance.lt(outputAmount)) {
             this.log.warn({
                 msg: "Insufficient balance on destination chain",
-                orderId: parsedArgs.orderId,
+                orderId,
                 chainId,
                 tokenAddress,
-                need: bestOutputAmount.toString(),
+                need: outputAmount.toString(),
                 have: balance.toString(),
             });
         }
-
-        this.log.info({
-            msg: "Submitting quote",
-            orderId: parsedArgs.orderId,
-            amount: bestOutputAmount.toString(),
-        });
-
-        // Submit quote on destination chain
-        const tx = await this.destinationCt.submitQuote(
-            parsedArgs.orderId,
-            bestOutputAmount,
-            orderData,
-        );
-
-        const receipt = await tx.wait();
-
-        const quoteDecimals = await getTokenDecimals(tokenAddress, chainId, this.multiProvider);
-        const quoteSymbol = await getTokenSymbol(tokenAddress, chainId, this.multiProvider);
-
-        this.log.info({
-            msg: "Quote submitted",
-            orderId: parsedArgs.orderId,
-            amount: bestOutputAmount.toString(),
-            formattedAmount: `${formatUnits(bestOutputAmount, quoteDecimals)} ${quoteSymbol}`,
-            txDetails: getTxDetails(receipt.transactionHash, this.multiProvider, chainId),
-            txHash: receipt.transactionHash,
-        });
     }
 
     /**
      * Calculate best output amount for competitive bidding
-     * Uses tradingPairs config to calculate market rate + quoteTolerance
-     * Also used by enoughBalanceOnDestination rule
      */
     async calculateBestOutput(
         data: IntentData
@@ -149,7 +90,6 @@ class LayerZeroRouterPrepare extends BasePrepare<
         const originData = data.fillInstructions[0].originData;
         const orderData = OrderEncoder.decode(originData);
 
-        // Extract order info
         const originDomainId = orderData.originDomain;
         const destinationDomainId = orderData.destinationDomain;
 
@@ -157,12 +97,11 @@ class LayerZeroRouterPrepare extends BasePrepare<
         const originChainName = chainIdsToName[originDomainId.toString()];
         const destinationChainName = chainIdsToName[destinationDomainId.toString()];
 
-        const inputToken = bytes32ToAddress(orderData.inputToken); // Assuming sender is input token address
+        const inputToken = bytes32ToAddress(orderData.inputToken);
         const outputToken = bytes32ToAddress(orderData.outputToken);
         const inputAmount = orderData.amountIn;
         const minOutputAmount = orderData.amountOut;
 
-        // Find trading pair (already validated by checkExchangeRate rule)
         const pairs = await getTradingPairs();
         const pair = pairs.find(
             (p) =>
@@ -176,11 +115,9 @@ class LayerZeroRouterPrepare extends BasePrepare<
             throw new Error(`Trading pair not found: ${originChainName}:${inputToken} → ${destinationChainName}:${outputToken}`);
         }
 
-        // Get decimals
         const inputDecimals = await getTokenDecimals(inputToken, originChainName, this.multiProvider);
         const outputDecimals = await getTokenDecimals(outputToken, destinationChainName, this.multiProvider);
 
-        // Calculate boosted output (market rate + quoteTolerance for auction)
         const boostedOutput = calculateSolverOutput(
             inputAmount,
             pair.exchangeRate,
@@ -188,8 +125,6 @@ class LayerZeroRouterPrepare extends BasePrepare<
             outputDecimals,
             pair.quoteTolerance
         );
-
-        // Ensure we meet minimum requirement
 
         if (boostedOutput.lt(minOutputAmount)) {
             throw new Error(`Cannot fulfill order. Boosted output: ${formatUnits(boostedOutput, outputDecimals)}, User minimum: ${formatUnits(minOutputAmount, outputDecimals)}`);
@@ -207,36 +142,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
     }
 
     /**
-     * Wait for quoting period to end by polling contract
-     */
-    private async waitForQuotingEnd(orderId: string): Promise<void> {
-        const pollInterval = this.defaultPollInterval;
-
-        const quotingPeriod = await this.auctionCt.quotingPeriod();
-
-        this.log.info({
-            msg: "Waiting for quoting period to end",
-            quotingPeriodSeconds: quotingPeriod.toNumber(),
-        });
-
-        while (true) {
-            const quotingEnded = await this.auctionCt.isQuotingEnded(orderId);
-
-            if (quotingEnded) {
-                this.log.info({
-                    msg: "Quoting period ended",
-                });
-                return;
-            }
-
-            await new Promise(resolve => setTimeout(resolve, pollInterval));
-        }
-    }
-
-    /**
-     * Claim the order on-chain after winning the auction.
-     * If the winner lacks collateral the contract resets the auction
-     * and emits AuctionRestarted instead of claiming.
+     * Claim order on router after winning auction.
      * @returns true if claimed, false if auction was restarted
      */
     private async claimOrder(
@@ -250,7 +156,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
             orderId: parsedArgs.orderId,
         });
 
-        const gasCost = await this.auctionCt.getOrderGasCost(parsedArgs.orderId);
+        const gasCost = await this.auctionManager.getOrderGasCost(parsedArgs.orderId);
 
         const tx = await this.destinationCt.claimOrder(
             parsedArgs.orderId,
@@ -287,62 +193,6 @@ class LayerZeroRouterPrepare extends BasePrepare<
         return true;
     }
 
-    /**
-     * Check if this solver won the auction
-     * Returns winning amount if won, undefined otherwise
-     */
-    private async isWinner(
-        parsedArgs: OpenEventArgs,
-        data: IntentData
-    ): Promise<BigNumber | undefined> {
-        const fillerAddress = await this.destinationSigner.getAddress();
-
-        const originData = data.fillInstructions[0].originData;
-        const orderData = OrderEncoder.decode(originData);
-
-        // Check if there are any quotes
-        const quoteCount = await this.auctionCt.getQuoteCount(parsedArgs.orderId);
-        if (quoteCount.eq(0)) {
-            this.log.info({
-                msg: "No quotes submitted - cannot fill",
-                orderId: parsedArgs.orderId,
-            });
-            return undefined;
-        }
-
-        // Get winner from contract
-        const [winnerAddress, winningAmount] = await this.auctionCt.getWinner(
-            parsedArgs.orderId,
-        );
-
-        const isWinner =
-            winnerAddress.toLowerCase() === fillerAddress.toLowerCase();
-
-        // Get network and token info for logging
-        const destinationChainName = chainIdsToName[orderData.destinationDomain.toString()];
-        const outputToken = bytes32ToAddress(orderData.outputToken);
-        const outputDecimals = await getTokenDecimals(outputToken, destinationChainName, this.multiProvider);
-        const outputSymbol = await getTokenSymbol(outputToken, destinationChainName, this.multiProvider);
-        const formattedAmount = `${formatUnits(winningAmount, outputDecimals)} ${outputSymbol}`;
-
-        const msg = {
-            msg: isWinner ? "Won auction" : "Not the auction winner",
-            orderId: parsedArgs.orderId,
-            winner: winnerAddress,
-            chainName: destinationChainName,
-            winningAmount: winningAmount.toString(),
-            formattedAmount,
-        }
-        this.log.info(msg);
-
-        if (!isWinner) {
-            return undefined;
-        }
-
-        return winningAmount;
-    }
-
-
     protected async retrieveOriginInfo(parsedArgs: OpenEventArgs) {
         const originTokens = parsedArgs.resolvedOrder.minReceived.map(
             ({amount, chainId, token}) => {
@@ -373,107 +223,81 @@ class LayerZeroRouterPrepare extends BasePrepare<
         });
     }
 
-
     /**
-     * Wait for AuctionRestarted event after losing the auction.
-     * Winner may get disqualified during claim, restarting the auction.
-     */
-    private waitForAuctionRestart(orderId: string): Promise<boolean> {
-        const TIMEOUT_MS = 30_000;
-
-        this.log.info({
-            msg: "Waiting for possible auction restart",
-            orderId,
-            timeoutMs: TIMEOUT_MS,
-        });
-
-        return new Promise<boolean>((resolve) => {
-            const filter = this.auctionCt.filters.AuctionRestarted(orderId);
-
-            const timeout = setTimeout(() => {
-                this.auctionCt.off(filter, handler);
-                resolve(false);
-            }, TIMEOUT_MS);
-
-            const handler = () => {
-                clearTimeout(timeout);
-                this.auctionCt.off(filter, handler);
-                this.log.info({
-                    msg: "AuctionRestarted event received, re-entering auction",
-                    orderId,
-                });
-                resolve(true);
-            };
-
-            this.auctionCt.on(filter, handler);
-        });
-    }
-
-    /**
-     * Run one auction round: submit quote (if needed) → wait → check winner → claim
-     * @returns shouldFill + winningAmount if claimed, or loops again on AuctionRestarted
+     * Run auction round: commit → reveal → winner → claim
+     * On loss, waits for possible AuctionRestarted and retries recursively.
      */
     private async runAuctionRound(
         parsedArgs: OpenEventArgs,
         data: IntentData,
-    ): Promise<{ shouldFill: boolean; winningAmount?: BigNumber }> {
-        // PHASE DETECTION: Check if quoting period has ended
-        const quotingEnded = await this.auctionCt.isQuotingEnded(parsedArgs.orderId);
+    ): Promise<{shouldFill: boolean; winningAmount?: BigNumber}> {
+        const auctionEnded = await this.auctionManager.isAuctionEnded(parsedArgs.orderId);
 
-        if (quotingEnded) {
+        if (auctionEnded) {
             this.log.info({
-                msg: "Quoting already ended - checking winner directly",
+                msg: "Auction already ended — checking winner directly",
                 orderId: parsedArgs.orderId,
             });
         } else {
-            this.log.info({
-                msg: "Quoting phase active",
-                orderId: parsedArgs.orderId,
-            });
+            // Calculate output and run pre-commit checks
+            const bestOutputAmount = await this.calculateBestOutput(data);
+            await this.preCommitChecks(parsedArgs.orderId, bestOutputAmount, data);
 
-            await this.submitQuote(parsedArgs, data);
-            await this.waitForQuotingEnd(parsedArgs.orderId);
+            // Commit phase
+            const {salt, outputAmount} = await this.auctionManager.commitQuote(
+                parsedArgs.orderId,
+                bestOutputAmount,
+                data,
+            );
+
+            // Wait for commit phase to end
+            await this.auctionManager.waitForCommitEnd(parsedArgs.orderId);
+
+            // Reveal phase
+            await this.auctionManager.revealQuote(parsedArgs.orderId, outputAmount, salt, data);
+
+            // Wait for auction to end
+            await this.auctionManager.waitForAuctionEnd(parsedArgs.orderId);
         }
 
-        const winningAmount = await this.isWinner(parsedArgs, data);
+        // Check winner
+        const winningAmount = await this.auctionManager.getWinner(parsedArgs.orderId, data);
 
         if (!winningAmount) {
-            const restarted = await this.waitForAuctionRestart(parsedArgs.orderId);
+            // Lost — wait for possible auction restart (winner disqualified)
+            const restarted = await this.auctionManager.waitForAuctionRestart(parsedArgs.orderId);
             if (restarted) {
                 return this.runAuctionRound(parsedArgs, data);
             }
             return {shouldFill: false};
         }
-        // wait 1 second to avoid race condition with claiming
-        // await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Claim on router
         const claimed = await this.claimOrder(parsedArgs, data);
 
         if (claimed) {
             return {shouldFill: true, winningAmount};
         }
 
-        // We were disqualified (insufficient collateral) — don't retry
-
+        // We were disqualified — don't retry
         return {shouldFill: false};
     }
 
     /**
-     * Prepare order for filling - handles auction logic
-     * Returns object with shouldFill flag and winningAmount if won
+     * Prepare order for filling — handles auction logic
      */
     protected async prepare(
         parsedArgs: OpenEventArgs,
         originChainName: string,
         blockNumber: number
-    ): Promise<{ shouldFill: boolean; winningAmount?: BigNumber }> {
+    ): Promise<{shouldFill: boolean; winningAmount?: BigNumber}> {
         try {
-            // Extract intent data
             const data: IntentData = {
                 fillInstructions: parsedArgs.resolvedOrder.fillInstructions,
                 maxSpent: parsedArgs.resolvedOrder.maxSpent,
             };
 
-            // Retrieve and log origin/target info
+            // Log origin/target info
             const origin = await this.retrieveOriginInfo(parsedArgs);
             const target = await this.retrieveTargetInfo(parsedArgs);
 
@@ -484,7 +308,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
                 target: target.join(", "),
             });
 
-            // Setup destination contract (reused across all methods)
+            // Setup contracts
             const destinationSettler = bytes32ToAddress(
                 data.fillInstructions[0].destinationSettler
             );
@@ -497,7 +321,14 @@ class LayerZeroRouterPrepare extends BasePrepare<
             );
 
             const auctionAddress = await this.destinationCt.AUCTION();
-            this.auctionCt = Auction__factory.connect(auctionAddress, this.destinationSigner);
+            const auctionCt = Auction__factory.connect(auctionAddress, this.destinationSigner);
+            this.auctionManager = new AuctionManager(
+                auctionCt,
+                this.destinationSigner,
+                this.multiProvider,
+                this.log,
+                this.defaultPollInterval,
+            );
 
             return await this.runAuctionRound(parsedArgs, data);
         } catch (error: any) {
@@ -509,7 +340,6 @@ class LayerZeroRouterPrepare extends BasePrepare<
             return {shouldFill: false};
         }
     }
-
 }
 
 export const create = (
