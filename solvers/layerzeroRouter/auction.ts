@@ -108,29 +108,27 @@ export class AuctionManager {
     }
 
     /**
-     * Wait for commit phase to end by polling getCommitDeadline
+     * Wait for commit phase to end using precise sleep based on deadline
      */
     async waitForCommitEnd(orderId: string): Promise<void> {
         const commitDeadline = await this.auctionCt.getCommitDeadline(orderId);
+        const chainName = await this.getChainName(orderId);
+        const provider = this.multiProvider.getProvider(chainName);
+        const block = await provider.getBlock("latest");
 
-        this.log.info({
-            msg: "Waiting for commit phase to end",
-            orderId,
-            commitDeadline: commitDeadline.toNumber(),
-        });
+        const waitMs = (commitDeadline.toNumber() - block.timestamp) * 1000;
 
-        while (true) {
-            const block = await this.multiProvider.getProvider(
-                await this.getChainName(orderId),
-            ).getBlock("latest");
-
-            if (block.timestamp >= commitDeadline.toNumber()) {
-                this.log.info({msg: "Commit phase ended", orderId});
-                return;
-            }
-
-            await new Promise((resolve) => setTimeout(resolve, this.pollInterval));
+        if (waitMs > 0) {
+            this.log.info({
+                msg: "Waiting for commit phase to end",
+                orderId,
+                commitDeadline: commitDeadline.toNumber(),
+                waitSeconds: Math.ceil(waitMs / 1000),
+            });
+            await new Promise((resolve) => setTimeout(resolve, waitMs));
         }
+
+        this.log.info({msg: "Commit phase ended", orderId});
     }
 
     /**
