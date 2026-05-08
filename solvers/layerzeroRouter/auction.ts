@@ -205,13 +205,6 @@ export class AuctionManager {
     }
 
     /**
-     * Get gas cost for claimOrder
-     */
-    async getOrderGasCost(orderId: string): Promise<BigNumber> {
-        return this.auctionCt.getOrderGasCost(orderId);
-    }
-
-    /**
      * Wait for AuctionRestarted event after losing the auction.
      * Winner may get disqualified during claim, restarting the auction.
      */

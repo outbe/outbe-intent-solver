@@ -33,6 +33,7 @@ const FALLBACK_COEN_USD = 0.012;
 
 export async function getTradingPairs(): Promise<TradingPair[]> {
     const coenUsdRate = await getOracleRate("COEN/USDC") ?? FALLBACK_COEN_USD;
+    console.log(coenUsdRate)
 
     return [
         // COEN <-> USDT (cross-chain)

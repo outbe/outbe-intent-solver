@@ -156,12 +156,9 @@ class LayerZeroRouterPrepare extends BasePrepare<
             orderId: parsedArgs.orderId,
         });
 
-        const gasCost = await this.auctionManager.getOrderGasCost(parsedArgs.orderId);
-
         const tx = await this.destinationCt.claimOrder(
             parsedArgs.orderId,
             originData,
-            {value: gasCost}
         );
 
         const receipt = await tx.wait();

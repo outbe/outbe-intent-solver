@@ -17,12 +17,7 @@ const customChainMetadata: ChainMap<ChainMetadata> = {
             decimals: 18,
         },
         rpcUrls: [
-            {
-                http: 'https://97.rpc.thirdweb.com/34f11a24bb8f2c2d5586f38df502f6a1',
-                pagination: {
-                    maxBlockRange: 1000,
-                },
-            },
+
             {
                 http: 'https://data-seed-prebsc-1-s1.binance.org:8545',
                 pagination: {
