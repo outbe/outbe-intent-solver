@@ -12,7 +12,12 @@
     "prettier:write": "prettier . --write",
     "contracts:typegen": "typechain --node16-modules --target ethers-v5 --out-dir typechain solvers/contracts/*.json",
     "postinstall": "yarn contracts:typegen",
-    "test": "vitest run"
+    "test": "vitest run",
+    "pairs:init": "tsx scripts/pairs.ts init",
+    "pairs:add": "tsx scripts/pairs.ts add",
+    "pairs:remove": "tsx scripts/pairs.ts remove",
+    "pairs:list": "tsx scripts/pairs.ts list",
+    "pairs:oracle": "tsx scripts/pairs.ts oracle"
   },
   "devDependencies": {
     "@inquirer/prompts": "^7.2.0",

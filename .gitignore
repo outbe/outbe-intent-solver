@@ -23,6 +23,7 @@ dist
 *.env.testnet
 *.log
 .DS_Store
+config/tradingPairs/pairs.json
 .pnp.*
 lcov.info
 

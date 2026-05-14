@@ -120,7 +120,7 @@ class LayerZeroRouterPrepare extends BasePrepare<
 
         const boostedOutput = calculateSolverOutput(
             inputAmount,
-            pair.exchangeRate,
+            pair.exchangeRate as number,
             inputDecimals,
             outputDecimals,
             pair.quoteTolerance

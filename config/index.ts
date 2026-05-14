@@ -3,7 +3,7 @@ import z from "zod";
 import allowBlockListsGlobal from "./allowBlockLists.js";
 import { chainMetadata } from "./chainMetadata.js";
 import { ConfigSchema } from "./types.js";
-import { getTradingPairs } from "./tradingPairs.js";
+import { getTradingPairs } from "./tradingPairs/handler.js";
 
 dotenvFlow.config();
 

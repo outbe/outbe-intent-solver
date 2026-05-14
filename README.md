@@ -24,8 +24,11 @@ solver/
 │  ├── index.ts
 │  ├── allowBlockLists.ts
 │  ├── chainMetadata.ts
-│  ├── tradingPairs.ts
-│  └── types.ts
+│  ├── types.ts
+│  └── tradingPairs/
+│      ├── handler.ts
+│      ├── pairs.json          # Working config (gitignored)
+│      └── pairs.example.json  # Example pairs (committed)
 └── solvers/
     ├── index.ts
     ├── BaseFiller.ts
@@ -37,6 +40,7 @@ solver/
         ├── index.ts
         ├── listener.ts
         ├── prepare.ts       # Optional: pre-fill strategy (e.g., auction logic)
+        ├── auction.ts       # Auction manager (commit-reveal logic)
         ├── filler.ts
         ├── types.ts
         ├── utils.ts
@@ -56,7 +60,10 @@ solver/
 - **NonceKeeperWallet.ts**: A class that extends ethers Wallet and prevents nonces race conditions when the solver needs to fill different intents (from different solutions) in the same network.
 - **patch-bigint-buffer-warn.js**: A script to suppress specific warnings related to BigInt and Buffer, ensuring cleaner console output.
 - **config/**: Global configuration for the solver.
-    - **tradingPairs.ts**: Defines supported token swap routes between chains with exchange rates and competitive bidding strategies.
+    - **tradingPairs/**: Trading pairs configuration.
+        - **handler.ts**: Loads pairs from JSON, resolves oracle exchange rates.
+        - **pairs.json**: Working pairs config (gitignored, created via `yarn pairs:init`).
+        - **pairs.example.json**: Example pairs config (committed to git).
 - **solvers/**: Contains implementations of different solvers and common utilities.
     - **BaseListener.ts**: An abstract base class that provides common functionality for event listeners. It handles setting up contract connections and defines the interface for parsing event arguments.
     - **BaseFiller.ts**: An abstract base class that provides common functionality for fillers. It handles the solver's lifecycle `prepareIntent`, `fill`, and `settle`.
@@ -65,7 +72,8 @@ solver/
         - **`settle`**: The settlement step, can be avoided.
     - **<eco|hyperlane7683|layerzeroRouter>/**: Implements the solvers for different protocols.
         - **listener.ts**: Extends `BaseListener` to handle domain-specific events.
-        - **prepare.ts**: (Optional) Implements pre-fill strategy. For LayerZeroRouter, handles auction logic: submits quotes during quoting phase and verifies winner status.
+        - **prepare.ts**: (Optional) Implements pre-fill strategy. For LayerZeroRouter, handles commit-reveal auction and order claiming.
+        - **auction.ts**: Auction manager — commit/reveal phases, winner detection, auction restart handling.
         - **filler.ts**: Extends `BaseFiller` to handle domain-specific intents.
         - **rules/**: Custom validation rules for deciding whether to fill an intent.
         - **contracts/**: Contains contract ABI and type definitions for interacting with domain-specific contracts.
@@ -162,37 +170,48 @@ The solver automatically connects to all chains configured in `chainMetadata.ts`
 
 ### Trading Pairs Configuration
 
-Trading pairs define supported token swaps between chains with exchange rates and bidding strategy. Located at: `solver/config/tradingPairs.ts`
+Trading pairs are stored in `config/tradingPairs/pairs.json` . Manage them via CLI commands:
 
-```typescript
-export const tradingPairs: TradingPair[] = [
-  // Native COEN (Outbe) → Native BNB (BSC)
-  {
-    originChain: "outbe_dev",
-    destinationChain: "bsctestnet",
-    inputToken: "0x0000000000000000000000000000000000000000", // Native COEN
-    outputToken: "0x0000000000000000000000000000000000000000", // Native BNB
-    exchangeRate: 0.0001,  // 1 COEN = 0.0001 BNB
-    quoteTolerance: 0.03,      // Offer 3% more to win
-  },
+```sh
+yarn pairs:init      # Create pairs.json from example
+yarn pairs:list      # Show configured pairs
+yarn pairs:add       # Add a pair interactively
+yarn pairs:remove    # Remove a pair interactively
+yarn pairs:oracle    # List available oracle pairs and current rates
+```
 
-  // Outbe native COEN → BSC USDC
+Example `pairs.json`:
+
+```json
+[
   {
-    originChain: "outbe_dev",
-    destinationChain: "bsctestnet",
-    inputToken: "0x0000000000000000000000000000000000000000",
-    outputToken: "0xae878856F2bEb1F716023043daFef50825d21396", // USDC
-    exchangeRate: 0.012,   // 1 COEN = 0.012 USDC
-    quoteTolerance: 0.02,      // Offer 2% more to win
+    "originChain": "outbetestnet",
+    "destinationChain": "bsctestnet",
+    "inputToken": "0x0000000000000000000000000000000000000000",
+    "outputToken": "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae",
+    "exchangeRate": "COEN/USDC",
+    "quoteTolerance": 0.01
   },
-];
+  {
+    "originChain": "bsctestnet",
+    "destinationChain": "outbetestnet",
+    "inputToken": "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae",
+    "outputToken": "0x0000000000000000000000000000000000000000",
+    "exchangeRate": 1,
+    "quoteTolerance": 0
+  }
+]
 ```
 
 **Parameters**:
-- `exchangeRate`: Exchange rate for the token pair (e.g., 0.0001 means 1 COEN = 0.0001 BNB)
-- `quoteTolerance`: Additional % offered during auction to increase winning chances (e.g., 0.02 = 2% more)
+- `exchangeRate`: One of three formats:
+    - **Fixed**: number, e.g. `1`
+    - **Oracle**: string key, e.g. `"COEN/USDC"` or `"1/COEN/USDC"` for inverse
+    - **URL**: e.g. `"https://my-api.com/rate"` — must return JSON `{"exchangeRate": "0.023271"}`
+- `quoteTolerance`: Extra % added to output to increase winning chances (e.g., `0.01` = 1% more)
+- `inputToken` / `outputToken`: Token addresses. Use `0x0000000000000000000000000000000000000000` for native tokens (COEN, BNB).
 
-**To add new token pairs**: Edit `solver/config/tradingPairs.ts` and add new entries following the format above. Use `0x0000000000000000000000000000000000000000` for native tokens (COEN, BNB, ETH). Restart the solver after changes.
+Oracle rates are fetched on-chain at each order. Use `yarn pairs:oracle` to see available oracle pairs.
 
 ### Intent Filtering
 
@@ -227,76 +246,81 @@ yarn dev
 
 ## LayerZeroRouter Auction Solver
 
-The LayerZeroRouter solver implements a **competitive auction mechanism** where multiple solvers compete by submitting quotes during a quoting period, and only the winning solver (highest output amount) can fill the order.
+The LayerZeroRouter solver implements a **commit-reveal Vickrey auction** where multiple solvers compete by first committing a hash of their quote, then revealing the actual amount. The highest bidder wins but pays the second-highest price.
 
 ### Architecture
 
-The solver uses a **three-module architecture**:
+The solver uses a **four-module architecture**:
 
 1. **Listener** (`listener.ts`): Detects `Open` events from LayerZeroRouter contracts
-2. **Prepare** (`prepare.ts`): Handles auction logic - submits quotes during quoting phase
-3. **Filler** (`filler.ts`): Executes fills when solver wins the auction
+2. **Prepare** (`prepare.ts`): Orchestrates auction flow and claims winning orders on the router
+3. **Auction** (`auction.ts`): Manages commit-reveal phases, winner detection, and auction restart handling
+4. **Filler** (`filler.ts`): Executes fills when solver wins the auction
 
-### Two-Phase Execution
+### Auction Flow
 
-#### Phase 1: Quoting Period
+#### Phase 1: Commit
 
 When an order is detected, the solver:
-1. Checks if quoting period is still active using `destination.isQuotingEnded()`
-2. Calculates competitive output amount:
-    - Finds matching `TradingPair` from config
-    - Calculates market output: `inputAmount * exchangeRate`
-    - Applies boost: `marketOutput * (1 + quoteTolerance)`
-3. Submits quote on destination chain via `destination.submitQuote()`
+1. Calculates competitive output amount using trading pair config (exchange rate + quote tolerance)
+2. Runs pre-commit checks (escrow collateral, token balance)
+3. Generates a random salt and commits a hash: `keccak256(abi.encode(orderId, outputAmount, salt))`
+4. Waits for commit deadline (precise sleep based on on-chain deadline)
 
-#### Phase 2: Filling Period
+#### Phase 2: Reveal
 
-After quoting period ends:
-1. Contract determines winner (solver with highest `outputAmount`)
-2. Solver checks if it won using `destination.getWinner()`
-3. If winner, executes fill with `winningAmount` from contract
-4. Sends settlement message back to origin chain via LayerZero
+After commit phase ends:
+1. Solver reveals the actual `outputAmount` and `salt`
+2. Contract verifies the reveal matches the committed hash
+3. Waits for auction to end (reveal deadline)
+
+#### Phase 3: Winner & Claim
+
+After auction ends:
+1. Contract determines winner (Vickrey: highest bidder, second-highest price)
+2. Solver checks if it won via `auction.getWinner()`
+3. If winner, claims the order on the router contract via `router.claimOrder()`
+4. If claim triggers `AuctionRestarted` (winner disqualified for insufficient collateral), solver does not retry
+
+#### Auction Restart
+
+If the solver loses the auction, it waits up to 30 seconds for an `AuctionRestarted` event (emitted when the winner is disqualified). If restarted, the solver enters a new auction round automatically.
 
 ### Key Features
 
-- **Auction deduplication**: On-chain check via `destination.hasSolverQuoted()`
-- **Dynamic decimals**: Queries token decimals automatically
-- **Order validation**: Checks if solver can fulfill order based on configured exchange rates
-- **Competitive bidding**: Configurable `quoteTolerance` per token
-- **Native token support**: Handles both ERC20 and native tokens (ETH, BNB, COEN)
+- **Commit-reveal scheme**: Prevents front-running — quotes are hidden until reveal phase
+- **Vickrey pricing**: Winner pays second-highest price, incentivizing truthful bidding
+- **Escrow collateral check**: Verifies solver has sufficient collateral before committing
+- **Oracle exchange rates**: Supports on-chain oracle rates (e.g., `COEN/USDC`) alongside fixed rates
+- **Auction restart handling**: Automatically re-enters auction if winner is disqualified
+- **Precise phase timing**: Uses on-chain deadlines for phase transitions to avoid missed reveals
 
-### How Trading Pairs Work
+### Example Flow
 
-When processing an order:
+```
+User creates order: 100 COEN → wants minimum 1 USDC
 
-1. **Exchange Rate Check** (`checkExchangeRate` rule):
-    - Finds matching pair for `originChain:inputToken → destinationChain:outputToken`
-    - Calculates: `solverOutput = inputAmount * exchangeRate`
-    - Validates: `solverOutput >= userMinimumRequired`
+TradingPair: exchangeRate = "COEN/USDC" (oracle), quoteTolerance = 0.01
+Oracle returns: COEN/USDC = 0.023
 
-2. **Quote Calculation** (`calculateBestOutput` in prepare):
-    - Base output: `inputAmount * exchangeRate`
-    - Apply boost: `baseOutput * (1 + quoteTolerance)`
-    - Submit to auction: `max(boostedOutput, userMinimum)`
+1. Calculate output:
+   - Base: 100 * 0.023 = 2.3 USDC
+   - Boost: 2.3 * (1 + 0.01) = 2.323 USDC
+   - Check: 2.323 >= 1 ✅
 
-3. **Example Flow**:
-   ```
-   User creates order: 100 COEN → wants minimum 1 USDC
+2. Commit phase:
+   - Generate salt
+   - Commit hash of (orderId, 2.323 USDC, salt)
+   - Wait for commit deadline
 
-   TradingPair: exchangeRate = 0.012, quoteTolerance = 0.02
+3. Reveal phase:
+   - Reveal 2.323 USDC + salt
+   - Wait for auction end
 
-   1. Check if solver can fulfill:
-      - Solver output: 100 * 0.012 = 1.2 USDC
-      - Check: 1.2 >= 1 ✅ Can fulfill!
-
-   2. Calculate competitive quote:
-      - Base: 1.2 USDC
-      - Boost: 1.2 * (1 + 0.02) = 1.224 USDC
-      - Submit quote: 1.224 USDC
-
-   3. If win auction:
-      - Fill with winning amount from contract
-   ```
+4. Winner check:
+   - If won → claim order on router → fill
+   - If lost → wait 30s for possible restart
+```
 
 ## Logging
 
