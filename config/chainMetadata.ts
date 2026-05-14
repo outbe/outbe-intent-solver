@@ -58,7 +58,7 @@ const customChainMetadata: ChainMap<ChainMetadata> = {
         },
         rpcUrls: [
             {
-                http: "https://eth.testnet.outbe.net",
+                http: "https://peira-rpc.outbe.net",
                 pagination: {
                     maxBlockRange: 1999,
                     minBlockNumber: 1,
