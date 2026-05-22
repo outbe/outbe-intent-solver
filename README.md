@@ -270,7 +270,7 @@ When an order is detected, the solver:
 #### Phase 2: Reveal
 
 After commit phase ends:
-1. Solver reveals the actual `outputAmount` and `salt`
+1. Solver reveals the actual `outputAmount`, `salt`, and `originData` (encoded order data from `fillInstructions`)
 2. Contract verifies the reveal matches the committed hash
 3. Waits for auction to end (reveal deadline)
 

@@ -11,6 +11,21 @@
         "name": "_owner",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "_compact",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_lockTag",
+        "type": "bytes12",
+        "internalType": "bytes12"
+      },
+      {
+        "name": "_escrow",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "stateMutability": "nonpayable"
@@ -147,6 +162,13 @@
   },
   {
     "type": "function",
+    "name": "acceptOwnership",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "allowInitializePath",
     "inputs": [
       {
@@ -208,6 +230,25 @@
         "name": "",
         "type": "uint128",
         "internalType": "uint128"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "destinationOrderStatus",
+    "inputs": [
+      {
+        "name": "orderId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "status",
+        "type": "bytes32",
+        "internalType": "bytes32"
       }
     ],
     "stateMutability": "view"
@@ -587,6 +628,19 @@
   },
   {
     "type": "function",
+    "name": "pendingOwner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "quote",
     "inputs": [
       {
@@ -812,24 +866,6 @@
   },
   {
     "type": "function",
-    "name": "setCompactConfig",
-    "inputs": [
-      {
-        "name": "_newCompact",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "_newLockTag",
-        "type": "bytes12",
-        "internalType": "bytes12"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "setDefaultGasLimit",
     "inputs": [
       {
@@ -897,19 +933,6 @@
   },
   {
     "type": "function",
-    "name": "setSolverEscrow",
-    "inputs": [
-      {
-        "name": "_escrow",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "settle",
     "inputs": [
       {
@@ -967,25 +990,6 @@
         "type": "address",
         "indexed": true,
         "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "CompactConfigSet",
-    "inputs": [
-      {
-        "name": "compact",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "lockTag",
-        "type": "bytes12",
-        "indexed": false,
-        "internalType": "bytes12"
       }
     ],
     "anonymous": false
@@ -1222,6 +1226,25 @@
   },
   {
     "type": "event",
+    "name": "OwnershipTransferStarted",
+    "inputs": [
+      {
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "OwnershipTransferred",
     "inputs": [
       {
@@ -1330,13 +1353,13 @@
   },
   {
     "type": "event",
-    "name": "SolverEscrowSet",
+    "name": "SlashSkipped",
     "inputs": [
       {
-        "name": "escrow",
-        "type": "address",
+        "name": "orderId",
+        "type": "bytes32",
         "indexed": true,
-        "internalType": "address"
+        "internalType": "bytes32"
       }
     ],
     "anonymous": false

@@ -93,7 +93,8 @@ export class AuctionManager {
             amount: outputAmount.toString(),
         });
 
-        const tx = await this.auctionCt.reveal(orderId, outputAmount, salt);
+        const originData = data.fillInstructions[0].originData;
+        const tx = await this.auctionCt.reveal(orderId, outputAmount, salt, originData);
         const receipt = await tx.wait();
 
         const chainId = data.fillInstructions[0].destinationChainId.toString();
