@@ -47,8 +47,8 @@ const customChainMetadata: ChainMap<ChainMetadata> = {
     outbetestnet: {
 
         protocol: ProtocolType.Ethereum,
-        chainId: 512215,
-        domainId: 512215,
+        chainId: 54322345,
+        domainId: 54322345,
         name: "outbetestnet",
         displayName: "Outbe Testnet",
         nativeToken: {
