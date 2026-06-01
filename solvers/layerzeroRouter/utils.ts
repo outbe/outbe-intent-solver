@@ -70,6 +70,22 @@ export async function getTokenSymbol(
 }
 
 /**
+ * Format token amount as "1.234 SYMBOL" using token's decimals and symbol.
+ */
+export async function formatTokenAmount(
+  amount: BigNumber,
+  tokenAddress: string,
+  chainName: string,
+  multiProvider: any,
+): Promise<string> {
+  const [decimals, symbol] = await Promise.all([
+    getTokenDecimals(tokenAddress, chainName, multiProvider),
+    getTokenSymbol(tokenAddress, chainName, multiProvider),
+  ]);
+  return `${ethers.utils.formatUnits(amount, decimals)} ${symbol}`;
+}
+
+/**
  * Calculate solver output amount based on exchange rate
  * All calculations in BigNumber to preserve precision
  *

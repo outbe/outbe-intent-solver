@@ -7,7 +7,7 @@ import {LayerZeroRouter__factory} from "../../typechain/factories/LayerZeroRoute
 import {Auction__factory} from "../../typechain/factories/Auction__factory.js";
 import {SolverEscrow__factory} from "../../typechain/factories/SolverEscrow__factory.js";
 import type {OpenEventArgs, IntentData, LayerZeroRouterMetadata} from "./types.js";
-import {log, getTokenDecimals, calculateSolverOutput} from "./utils.js";
+import {log, getTokenDecimals, calculateSolverOutput, formatTokenAmount} from "./utils.js";
 import * as OrderEncoder from "../../lib/OrderEncoder.js";
 import {chainIdsToName, getTradingPairs} from "../../config/index.js";
 import {
@@ -130,11 +130,16 @@ class LayerZeroRouterPrepare extends BasePrepare<
             throw new Error(`Cannot fulfill order. Boosted output: ${formatUnits(boostedOutput, outputDecimals)}, User minimum: ${formatUnits(minOutputAmount, outputDecimals)}`);
         }
 
+        const [minRequiredFormatted, boostedOutputFormatted] = await Promise.all([
+            formatTokenAmount(minOutputAmount, outputToken, destinationChainName, this.multiProvider),
+            formatTokenAmount(boostedOutput, outputToken, destinationChainName, this.multiProvider),
+        ]);
+
         this.log.info({
             msg: "Calculated competitive quote",
             exchangeRate: pair.exchangeRate,
-            minRequired: minOutputAmount.toString(),
-            boostedOutput: boostedOutput.toString(),
+            minRequired: minRequiredFormatted,
+            boostedOutput: boostedOutputFormatted,
             quoteTolerance: `${(pair.quoteTolerance * 100).toFixed(1)}%`,
         });
 

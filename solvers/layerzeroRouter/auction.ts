@@ -6,7 +6,7 @@ import type {Auction} from "../../typechain/Auction.js";
 import type {Logger} from "../../logger.js";
 import {getTxDetails} from "../utils.js";
 import type {MultiProvider} from "@hyperlane-xyz/sdk";
-import {getTokenDecimals, getTokenSymbol} from "./utils.js";
+import {getTokenDecimals, getTokenSymbol, formatTokenAmount} from "./utils.js";
 import {bytes32ToAddress} from "@hyperlane-xyz/utils";
 import {chainIdsToName} from "../../config/index.js";
 import type {IntentData} from "./types.js";
@@ -20,6 +20,13 @@ export class AuctionManager {
         private readonly log: Logger,
         private readonly pollInterval: number = 3000,
     ) {}
+
+    private async formatOutputAmount(amount: BigNumber, data: IntentData): Promise<string> {
+        const orderData = OrderEncoder.decode(data.fillInstructions[0].originData);
+        const destinationChainName = chainIdsToName[orderData.destinationDomain.toString()];
+        const outputToken = bytes32ToAddress(orderData.outputToken);
+        return formatTokenAmount(amount, outputToken, destinationChainName, this.multiProvider);
+    }
 
     /**
      * Commit phase: generate salt, compute hash, submit commitment
@@ -60,7 +67,7 @@ export class AuctionManager {
         this.log.info({
             msg: "Committing quote",
             orderId,
-            amount: outputAmount.toString(),
+            amount: await this.formatOutputAmount(outputAmount, data),
         });
 
         const tx = await this.auctionCt.commit(orderId, commitHash);
@@ -90,7 +97,7 @@ export class AuctionManager {
         this.log.info({
             msg: "Revealing quote",
             orderId,
-            amount: outputAmount.toString(),
+            amount: await this.formatOutputAmount(outputAmount, data),
         });
 
         const originData = data.fillInstructions[0].originData;
@@ -102,7 +109,7 @@ export class AuctionManager {
         this.log.info({
             msg: "Quote revealed",
             orderId,
-            amount: outputAmount.toString(),
+            amount: await this.formatOutputAmount(outputAmount, data),
             txDetails: getTxDetails(receipt.transactionHash, this.multiProvider, chainId),
             txHash: receipt.transactionHash,
         });
@@ -191,8 +198,7 @@ export class AuctionManager {
             orderId,
             winner: winnerAddress,
             chainName: destinationChainName,
-            winningAmount: winningAmount.toString(),
-            formattedAmount,
+            winningAmount: formattedAmount,
         });
 
         return isWinner ? winningAmount : undefined;

@@ -15,7 +15,9 @@ import type {
     IntentData,
     OpenEventArgs,
 } from "./types.js";
-import {log, quoteSettleFee, getTokenDecimals, getTokenSymbol} from "./utils.js";
+import {log, quoteSettleFee, getTokenDecimals, getTokenSymbol, formatTokenAmount} from "./utils.js";
+import * as OrderEncoder from "../../lib/OrderEncoder.js";
+import {chainIdsToName} from "../../config/index.js";
 
 import {BaseFiller} from "../BaseFiller.js";
 import {allowBlockLists, metadata} from "./config/index.js";
@@ -55,10 +57,20 @@ class LayerZeroRouterFiller extends BaseFiller<
         blockNumber: number,
         winningAmount?: BigNumber,
     ) {
+        let winningAmountFormatted: string | undefined;
+        if (winningAmount) {
+            const orderData = OrderEncoder.decode(data.fillInstructions[0].originData);
+            const destinationChainName = chainIdsToName[orderData.destinationDomain.toString()];
+            const outputToken = bytes32ToAddress(orderData.outputToken);
+            winningAmountFormatted = await formatTokenAmount(
+                winningAmount, outputToken, destinationChainName, this.multiProvider,
+            );
+        }
+
         this.log.info({
             msg: "Filling Intent",
             intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
-            winningAmount: winningAmount?.toString(),
+            winningAmount: winningAmountFormatted,
         });
 
         await Promise.all(
