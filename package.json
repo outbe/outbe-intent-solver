@@ -17,7 +17,8 @@
     "pairs:add": "tsx scripts/pairs.ts add",
     "pairs:remove": "tsx scripts/pairs.ts remove",
     "pairs:list": "tsx scripts/pairs.ts list",
-    "pairs:oracle": "tsx scripts/pairs.ts oracle"
+    "pairs:oracle": "tsx scripts/pairs.ts oracle",
+    "pairs:rate": "tsx scripts/test-oracle.ts"
   },
   "devDependencies": {
     "@inquirer/prompts": "^7.2.0",

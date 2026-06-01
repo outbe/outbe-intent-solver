@@ -1,10 +1,15 @@
-import {ethers} from "ethers";
+import {BigNumber, ethers} from "ethers";
 import {readFileSync, existsSync} from "fs";
 import {resolve, dirname} from "path";
 import {fileURLToPath} from "url";
+import {chainMetadata} from "../chainMetadata.js";
+import IOracleAbi from "../../solvers/contracts/IOracle.json" with {type: "json"};
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PAIRS_FILE = resolve(__dirname, "pairs.json");
+const OUTBE_RPC = chainMetadata.outbetestnet.rpcUrls[0].http;
+const ORACLE_ADDRESS = "0x000000000000000000000000000000000000EE05";
+const RATE_DECIMALS = 18;
 
 export interface TradingPair {
     originChain: string;
@@ -15,15 +20,19 @@ export interface TradingPair {
     quoteTolerance: number;
 }
 
+function rateToFloat(rate: BigNumber): number {
+    return parseFloat(ethers.utils.formatUnits(rate, RATE_DECIMALS));
+}
+
 async function getOracleRate(pairName: string): Promise<number | null> {
     try {
-        const provider = new ethers.providers.JsonRpcProvider("https://eth.testnet.outbe.net");
-        const abi = ["function getExchangeRates() view returns (tuple(string pair, tuple(string exchangeRate, string lastUpdate, int64 lastUpdateTimestamp) oracleExchangeRateVal)[])"];
-        const oracle = new ethers.Contract("0x0000000000000000000000000000000000001008", abi, provider);
-        const rates = await oracle.getExchangeRates();
-        const found = rates.find((r: any) => r.pair === pairName);
-        if (!found) return null;
-        return parseFloat(found.oracleExchangeRateVal.exchangeRate);
+        const [base, quote] = pairName.split("/");
+        if (!base || !quote) return null;
+
+        const provider = new ethers.providers.JsonRpcProvider(OUTBE_RPC);
+        const oracle = new ethers.Contract(ORACLE_ADDRESS, IOracleAbi, provider);
+        const {rate} = await oracle.getExchangeRate(base, quote);
+        return rateToFloat(rate);
     } catch {
         return null;
     }
@@ -94,15 +103,14 @@ export async function getTradingPairs(): Promise<TradingPair[]> {
     );
 }
 
-export async function getOracleRates(): Promise<{pair: string; rate: string; lastUpdate: string}[]> {
-    const provider = new ethers.providers.JsonRpcProvider("https://eth.testnet.outbe.net");
-    const abi = ["function getExchangeRates() view returns (tuple(string pair, tuple(string exchangeRate, string lastUpdate, int64 lastUpdateTimestamp) oracleExchangeRateVal)[])"];
-    const oracle = new ethers.Contract("0x0000000000000000000000000000000000001008", abi, provider);
-    const rates = await oracle.getExchangeRates();
-    return rates.map((r: any) => ({
-        pair: r.pair,
-        rate: r.oracleExchangeRateVal.exchangeRate,
-        lastUpdate: r.oracleExchangeRateVal.lastUpdate,
+export async function getOracleRates(): Promise<{rate: string; block: string; timestamp: string}[]> {
+    const provider = new ethers.providers.JsonRpcProvider(OUTBE_RPC);
+    const oracle = new ethers.Contract(ORACLE_ADDRESS, IOracleAbi, provider);
+    const {rates, blocks, timestamps} = await oracle.getExchangeRates();
+    return rates.map((rate: BigNumber, i: number) => ({
+        rate: rateToFloat(rate).toString(),
+        block: blocks[i].toString(),
+        timestamp: timestamps[i].toString(),
     }));
 }
 

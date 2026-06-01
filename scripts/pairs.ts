@@ -121,10 +121,10 @@ async function oracle() {
         return;
     }
 
-    console.log(`\n${rates.length} oracle pair(s):\n`);
-    for (const r of rates) {
-        console.log(`  ${r.pair}  rate: ${r.rate}  updated: ${r.lastUpdate}`);
-    }
+    console.log(`\n${rates.length} oracle rate(s):\n`);
+    rates.forEach((r, i) => {
+        console.log(`  [${i}] rate: ${r.rate}  block: ${r.block}  timestamp: ${r.timestamp}`);
+    });
     console.log();
 }
 

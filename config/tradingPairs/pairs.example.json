@@ -3,14 +3,14 @@
     "originChain": "outbetestnet",
     "destinationChain": "bsctestnet",
     "inputToken": "0x0000000000000000000000000000000000000000",
-    "outputToken": "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae",
+    "outputToken": "0xA102BBe9BeA0C2C19Fa6604507851788454C8428",
     "exchangeRate": "COEN/USDC",
     "quoteTolerance": 0.01
   },
   {
     "originChain": "bsctestnet",
     "destinationChain": "outbetestnet",
-    "inputToken": "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae",
+    "inputToken": "0xA102BBe9BeA0C2C19Fa6604507851788454C8428",
     "outputToken": "0x0000000000000000000000000000000000000000",
     "exchangeRate": "1/COEN/USDC",
     "quoteTolerance": 0.01
@@ -18,16 +18,16 @@
   {
     "originChain": "outbetestnet",
     "destinationChain": "bsctestnet",
-    "inputToken": "0x8958643e5e4ea64787Aa9559fd99E97e2082D30D",
-    "outputToken": "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae",
+    "inputToken": "0x1a5FF18C7A3B9D6f9F2640d9e6CF074ee80d71fa",
+    "outputToken": "0xA102BBe9BeA0C2C19Fa6604507851788454C8428",
     "exchangeRate": 1,
     "quoteTolerance": 0
   },
   {
     "originChain": "bsctestnet",
     "destinationChain": "outbetestnet",
-    "inputToken": "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae",
-    "outputToken": "0x8958643e5e4ea64787Aa9559fd99E97e2082D30D",
+    "inputToken": "0xA102BBe9BeA0C2C19Fa6604507851788454C8428",
+    "outputToken": "0x1a5FF18C7A3B9D6f9F2640d9e6CF074ee80d71fa",
     "exchangeRate": 1,
     "quoteTolerance": 0
   },
@@ -35,14 +35,14 @@
     "originChain": "outbetestnet",
     "destinationChain": "outbetestnet",
     "inputToken": "0x0000000000000000000000000000000000000000",
-    "outputToken": "0x8958643e5e4ea64787Aa9559fd99E97e2082D30D",
+    "outputToken": "0x1a5FF18C7A3B9D6f9F2640d9e6CF074ee80d71fa",
     "exchangeRate": "COEN/USDC",
     "quoteTolerance": 0.01
   },
   {
     "originChain": "outbetestnet",
     "destinationChain": "outbetestnet",
-    "inputToken": "0x8958643e5e4ea64787Aa9559fd99E97e2082D30D",
+    "inputToken": "0x1a5FF18C7A3B9D6f9F2640d9e6CF074ee80d71fa",
     "outputToken": "0x0000000000000000000000000000000000000000",
     "exchangeRate": "1/COEN/USDC",
     "quoteTolerance": 0.01
