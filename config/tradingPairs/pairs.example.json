@@ -18,7 +18,7 @@
   {
     "originChain": "outbetestnet",
     "destinationChain": "bsctestnet",
-    "inputToken": "0x1a5FF18C7A3B9D6f9F2640d9e6CF074ee80d71fa",
+    "inputToken": "0x658897346c9bD7C2F3d7885ED18f60A3759f6518",
     "outputToken": "0x78366397b72D0c283658DA5A38C450455A97e595",
     "exchangeRate": 1,
     "quoteTolerance": 0
@@ -27,7 +27,7 @@
     "originChain": "bsctestnet",
     "destinationChain": "outbetestnet",
     "inputToken": "0x78366397b72D0c283658DA5A38C450455A97e595",
-    "outputToken": "0x1a5FF18C7A3B9D6f9F2640d9e6CF074ee80d71fa",
+    "outputToken": "0x658897346c9bD7C2F3d7885ED18f60A3759f6518",
     "exchangeRate": 1,
     "quoteTolerance": 0
   },
@@ -35,14 +35,14 @@
     "originChain": "outbetestnet",
     "destinationChain": "outbetestnet",
     "inputToken": "0x0000000000000000000000000000000000000000",
-    "outputToken": "0x1a5FF18C7A3B9D6f9F2640d9e6CF074ee80d71fa",
+    "outputToken": "0x658897346c9bD7C2F3d7885ED18f60A3759f6518",
     "exchangeRate": "COEN/USDC",
     "quoteTolerance": 0.01
   },
   {
     "originChain": "outbetestnet",
     "destinationChain": "outbetestnet",
-    "inputToken": "0x1a5FF18C7A3B9D6f9F2640d9e6CF074ee80d71fa",
+    "inputToken": "0x658897346c9bD7C2F3d7885ED18f60A3759f6518",
     "outputToken": "0x0000000000000000000000000000000000000000",
     "exchangeRate": "1/COEN/USDC",
     "quoteTolerance": 0.01
