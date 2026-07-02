@@ -8,7 +8,7 @@ The solver directory contains the implementation of the Intent Solver, a TypeScr
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
-- [LayerZeroRouter Auction Solver](#layerzerorouter-auction-solver)
+- [Router Auction Solver](#router-auction-solver)
 - [Logging](#logging)
 
 ## Directory Structure
@@ -36,7 +36,7 @@ solver/
     ├── types.ts
     ├── utils.ts
     ├── contracts/
-    └── <eco|hyperlane7683|layerzeroRouter>/
+    └── <eco|hyperlane7683|router>/
         ├── index.ts
         ├── listener.ts
         ├── prepare.ts       # Optional: pre-fill strategy (e.g., auction logic)
@@ -70,9 +70,9 @@ solver/
         - **`prepareIntent`**: evaluate allow/block lists, balances, and run the defined rules to decide whether to fill or not an intent.
         - **`fill`**: The actual filling.
         - **`settle`**: The settlement step, can be avoided.
-    - **<eco|hyperlane7683|layerzeroRouter>/**: Implements the solvers for different protocols.
+    - **<eco|hyperlane7683|router>/**: Implements the solvers for different protocols.
         - **listener.ts**: Extends `BaseListener` to handle domain-specific events.
-        - **prepare.ts**: (Optional) Implements pre-fill strategy. For LayerZeroRouter, handles commit-reveal auction and order claiming.
+        - **prepare.ts**: (Optional) Implements pre-fill strategy. For Router, handles commit-reveal auction and order claiming.
         - **auction.ts**: Auction manager — commit/reveal phases, winner detection, auction restart handling.
         - **filler.ts**: Extends `BaseFiller` to handle domain-specific intents.
         - **rules/**: Custom validation rules for deciding whether to fill an intent.
@@ -244,15 +244,15 @@ Run in watch mode for development:
 yarn dev
 ```
 
-## LayerZeroRouter Auction Solver
+## Router Auction Solver
 
-The LayerZeroRouter solver implements a **commit-reveal Vickrey auction** where multiple solvers compete by first committing a hash of their quote, then revealing the actual amount. The highest bidder wins but pays the second-highest price.
+The Router solver targets the shared `Router` settler contract, which abstracts the underlying cross-chain transport (Hyperlane / LayerZero) behind a single `bridge()`. It implements a **commit-reveal Vickrey auction** where multiple solvers compete by first committing a hash of their quote, then revealing the actual amount. The highest bidder wins but pays the second-highest price.
 
 ### Architecture
 
 The solver uses a **four-module architecture**:
 
-1. **Listener** (`listener.ts`): Detects `Open` events from LayerZeroRouter contracts
+1. **Listener** (`listener.ts`): Detects `Open` events from Router contracts
 2. **Prepare** (`prepare.ts`): Orchestrates auction flow and claims winning orders on the router
 3. **Auction** (`auction.ts`): Manages commit-reveal phases, winner detection, and auction restart handling
 4. **Filler** (`filler.ts`): Executes fills when solver wins the auction

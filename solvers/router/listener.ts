@@ -1,24 +1,24 @@
 import { chainIdsToName } from "../../config/index.js";
 import type { TypedListener } from "../../typechain/common.js";
 import type {
-  LayerZeroRouter,
+  Router,
   OpenEvent,
-} from "../../typechain/LayerZeroRouter.js";
+} from "../../typechain/Router.js";
 import { BaseListener } from "../BaseListener.js";
 import { metadata } from "./config/index.js";
-import type { OpenEventArgs, LayerZeroRouterMetadata } from "./types.js";
+import type { OpenEventArgs, RouterMetadata } from "./types.js";
 import { log } from "./utils.js";
 import { getLastIndexedBlocks } from "./db.js";
-import { LayerZeroRouter__factory } from "../../typechain/factories/LayerZeroRouter__factory.js";
+import { Router__factory } from "../../typechain/factories/Router__factory.js";
 import type {MultiProvider} from "@hyperlane-xyz/sdk";
 
-export class LayerZeroRouterListener extends BaseListener<
-  LayerZeroRouter,
+export class RouterListener extends BaseListener<
+  Router,
   OpenEvent,
   OpenEventArgs
 > {
-  constructor(metadata: LayerZeroRouterMetadata,multiProvider: MultiProvider) {
-    super(LayerZeroRouter__factory, "Open", metadata, log,multiProvider);
+  constructor(metadata: RouterMetadata,multiProvider: MultiProvider) {
+    super(Router__factory, "Open", metadata, log,multiProvider);
   }
 
   protected override parseEventArgs(
@@ -60,5 +60,5 @@ export const create = async (
     return contract;
   });
 
-  return new LayerZeroRouterListener(metadata,multiProvider).create();
+  return new RouterListener(metadata,multiProvider).create();
 };

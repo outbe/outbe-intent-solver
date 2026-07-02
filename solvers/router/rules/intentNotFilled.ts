@@ -1,9 +1,9 @@
 import { bytes32ToAddress } from "@hyperlane-xyz/utils";
 
-import { LayerZeroRouter__factory } from "../../../typechain/factories/LayerZeroRouter__factory.js";
-import { LayerZeroRouterRule } from "../prepare.js";
+import { Router__factory } from "../../../typechain/factories/Router__factory.js";
+import { RouterRule } from "../prepare.js";
 
-export function intentNotFilled(): LayerZeroRouterRule {
+export function intentNotFilled(): RouterRule {
   return async (parsedArgs, context) => {
     const destinationSettler = bytes32ToAddress(
       parsedArgs.resolvedOrder.fillInstructions[0].destinationSettler,
@@ -12,7 +12,7 @@ export function intentNotFilled(): LayerZeroRouterRule {
       parsedArgs.resolvedOrder.fillInstructions[0].destinationChainId.toString();
     const filler = await context.multiProvider.getSigner(_chainId);
 
-    const destination = LayerZeroRouter__factory.connect(
+    const destination = Router__factory.connect(
       destinationSettler,
       filler,
     );

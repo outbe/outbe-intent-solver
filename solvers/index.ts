@@ -1,1 +1,1 @@
-export * as layerzeroRouter from './layerzeroRouter/index.js';
+export * as router from './router/index.js';

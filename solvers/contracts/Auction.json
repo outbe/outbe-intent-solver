@@ -564,6 +564,25 @@
     "anonymous": false
   },
   {
+    "type": "event",
+    "name": "RouterUpdated",
+    "inputs": [
+      {
+        "name": "oldRouter",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "newRouter",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
     "type": "error",
     "name": "AlreadyCommitted",
     "inputs": []
@@ -615,13 +634,35 @@
   },
   {
     "type": "error",
-    "name": "OnlyAuthorized",
+    "name": "OrderFillExpired",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "OrderFillExpired",
+    "name": "OutputAmountTooLarge",
     "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OwnableInvalidOwner",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableUnauthorizedAccount",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
   },
   {
     "type": "error",
@@ -631,6 +672,16 @@
   {
     "type": "error",
     "name": "RevealPhaseNotActive",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "UnauthorizedRouter",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroRouter",
     "inputs": []
   }
 ]

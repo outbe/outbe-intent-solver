@@ -2,18 +2,18 @@ import { defaultAbiCoder } from "@ethersproject/abi";
 import { BigNumber } from "@ethersproject/bignumber";
 import { ethers } from "ethers";
 import { createLogger } from "../../logger.js";
-import type { LayerZeroRouter } from "../../typechain/LayerZeroRouter.js";
+import type { Router } from "../../typechain/Router.js";
 import { metadata } from "./config/index.js";
 
 export const log = createLogger(metadata.protocolName);
 
 /**
- * Calculate LayerZero fee for settlement message
- * Encodes payload and quotes the fee in one call
+ * Quote bridge fee for a settlement message to the destination domain.
+ * The Router abstracts the underlying transport (Hyperlane / LayerZero).
  */
 export async function quoteSettleFee(
-  destination: LayerZeroRouter,
-  originChainId: BigNumber,
+  destination: Router,
+  destinationDomain: BigNumber,
   orderId: string,
   fillerData: string,
 ): Promise<BigNumber> {
@@ -21,8 +21,7 @@ export async function quoteSettleFee(
     ["bool", "bytes32[]", "bytes[]"],
     [true, [orderId], [fillerData]],
   );
-  const fee = await destination.quote(originChainId, settlePayload, false);
-  return fee.nativeFee;
+  return destination.quote(destinationDomain, settlePayload);
 }
 
 

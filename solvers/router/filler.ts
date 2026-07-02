@@ -9,9 +9,9 @@ import {
 } from "@hyperlane-xyz/utils";
 
 import {ERC20__factory} from "../../typechain/factories/ERC20__factory.js";
-import {LayerZeroRouter__factory} from "../../typechain/factories/LayerZeroRouter__factory.js";
+import {Router__factory} from "../../typechain/factories/Router__factory.js";
 import type {
-    LayerZeroRouterMetadata,
+    RouterMetadata,
     IntentData,
     OpenEventArgs,
 } from "./types.js";
@@ -24,8 +24,8 @@ import {allowBlockLists, metadata} from "./config/index.js";
 import {saveBlockNumber} from "./db.js";
 import {getTxDetails} from "../utils.js";
 
-class LayerZeroRouterFiller extends BaseFiller<
-    LayerZeroRouterMetadata,
+class RouterFiller extends BaseFiller<
+    RouterMetadata,
     OpenEventArgs,
     IntentData
 > {
@@ -44,7 +44,7 @@ class LayerZeroRouterFiller extends BaseFiller<
             return {data: {fillInstructions, maxSpent}, success: true};
         } catch (error: any) {
             return {
-                error: error.message ?? "Failed to prepare LayerZeroRouter Intent.",
+                error: error.message ?? "Failed to prepare Router Intent.",
                 success: false,
             };
         }
@@ -136,7 +136,7 @@ class LayerZeroRouterFiller extends BaseFiller<
 
                     const filler = this.multiProvider.getSigner(_chainId);
                     const fillerAddress = await filler.getAddress();
-                    const destination = LayerZeroRouter__factory.connect(
+                    const destination = Router__factory.connect(
                         destinationSettler,
                         filler,
                     );
@@ -201,7 +201,7 @@ class LayerZeroRouterFiller extends BaseFiller<
 
                     return Promise.all(
                         uniqueSettlers.map(async (destinationSettler) => {
-                            const destination = LayerZeroRouter__factory.connect(
+                            const destination = Router__factory.connect(
                                 destinationSettler,
                                 filler,
                             );
@@ -215,7 +215,7 @@ class LayerZeroRouterFiller extends BaseFiller<
                                         parsedArgs.orderId,
                                     );
 
-                                    // Calculate LayerZero fee for settlement
+                                    // Calculate bridge fee for settlement
                                     fee = await quoteSettleFee(
                                         destination,
                                         parsedArgs.resolvedOrder.originChainId,
@@ -239,9 +239,9 @@ class LayerZeroRouterFiller extends BaseFiller<
                                     });
                                 } else {
                                     this.log.info({
-                                        msg: "Settlement message sent to LayerZero",
+                                        msg: "Settlement message sent to bridge",
                                         intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
-                                        status: "Waiting for LayerZero delivery to origin chain",
+                                        status: "Waiting for bridge delivery to origin chain",
                                         txDetails: getTxDetails(receipt.transactionHash, this.multiProvider, destinationChain),
                                         txHash: receipt.transactionHash,
                                     });
@@ -275,7 +275,7 @@ class LayerZeroRouterFiller extends BaseFiller<
         if (!originSettlerAddress) return;
 
         const originProvider = this.multiProvider.getProvider(originChainName);
-        const originContract = LayerZeroRouter__factory.connect(
+        const originContract = Router__factory.connect(
             originSettlerAddress,
             originProvider,
         );
@@ -304,7 +304,7 @@ class LayerZeroRouterFiller extends BaseFiller<
             clearTimeout(timeout);
             originContract.off(filter, handler);
             this.log.info({
-                msg: "LayerZero msg delivered, Order settled on origin chain",
+                msg: "Bridge msg delivered, Order settled on origin chain",
                 intent,
                 receiver,
                 chainName: originChainName,
@@ -327,5 +327,5 @@ class LayerZeroRouterFiller extends BaseFiller<
 }
 
 export const create = (multiProvider: MultiProvider) => {
-    return new LayerZeroRouterFiller(multiProvider).create();
+    return new RouterFiller(multiProvider).create();
 };

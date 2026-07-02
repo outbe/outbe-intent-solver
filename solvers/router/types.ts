@@ -1,7 +1,7 @@
 import type { BigNumber } from "ethers";
 import z from "zod";
 
-import type { OpenEventObject } from "../../typechain/LayerZeroRouter.js";
+import type { OpenEventObject } from "../../typechain/Router.js";
 import { BaseMetadataSchema } from "../types.js";
 
 export type ExtractStruct<T, K extends object> = T extends (infer U & K)[]
@@ -41,6 +41,6 @@ export type IntentData = {
   maxSpent: ResolvedCrossChainOrder["maxSpent"];
 };
 
-export const LayerZeroRouterMetadataSchema = BaseMetadataSchema.extend({});
+export const RouterMetadataSchema = BaseMetadataSchema.extend({});
 
-export type LayerZeroRouterMetadata = z.infer<typeof LayerZeroRouterMetadataSchema>;
+export type RouterMetadata = z.infer<typeof RouterMetadataSchema>;
