@@ -14,6 +14,11 @@ const ethersLogger = new Logger("NonceKeeperWallet");
 import { log } from "./logger.js";
 
 const nonces: Record<number, Promise<number>> = {};
+// Track nonce at startup + how many tx-es this process issued, per chain.
+// Diff between (onChainNonce) and (initial + sent) shows external tx activity
+// on the same key — signal that the private key is used elsewhere.
+const initialNonce: Record<number, number> = {};
+const sentCount: Record<number, number> = {};
 
 export class NonceKeeperWallet extends Wallet {
   connect(provider: Provider): NonceKeeperWallet {
@@ -22,11 +27,39 @@ export class NonceKeeperWallet extends Wallet {
 
   async getNextNonce(): Promise<number> {
     const chainId = await this.getChainId();
-    nonces[chainId] ||= super.getTransactionCount();
+    if (nonces[chainId] == null) {
+      const start = super.getTransactionCount();
+      nonces[chainId] = start;
+      sentCount[chainId] = 0;
+      initialNonce[chainId] = await start;
+    }
     const nonce = nonces[chainId];
     nonces[chainId] = nonces[chainId].then((nonce) => nonce + 1);
+    sentCount[chainId] = (sentCount[chainId] ?? 0) + 1;
 
     return nonce;
+  }
+
+  private async resyncNonce(reason: string): Promise<void> {
+    const chainId = await this.getChainId();
+    const onChain = await super.getTransactionCount();
+    const expected = (initialNonce[chainId] ?? 0) + (sentCount[chainId] ?? 0);
+    const externalTxCount = onChain - expected;
+    log.warn({
+      msg: "Nonce desync — resyncing from chain",
+      reason,
+      chainId,
+      onChainNonce: onChain,
+      expectedNonce: expected,
+      externalTxCount,
+      hint:
+        externalTxCount > 0
+          ? "Private key is used by another process/wallet"
+          : "Local cache stale (restart / dropped tx)",
+    });
+    delete nonces[chainId];
+    initialNonce[chainId] = onChain;
+    sentCount[chainId] = 0;
   }
 
   async sendTransaction(
@@ -36,7 +69,13 @@ export class NonceKeeperWallet extends Wallet {
     try {
       // this check is necessary in order to not generate new nonces when a tx is going to fail
       await super.estimateGas(transaction);
-    } catch (error) {
+    } catch (error: any) {
+      const message = extractErrorMessage(error);
+      if (message.match(/nonce (is )?too low|nonce has already been used/i) && _retryCount < 3) {
+        await this.resyncNonce("estimateGas returned 'nonce too low'");
+        transaction.nonce = undefined;
+        return this.sendTransaction(transaction, _retryCount + 1);
+      }
       checkError(error, {transaction});
     }
 
@@ -57,6 +96,11 @@ export class NonceKeeperWallet extends Wallet {
         });
         const chainId = await this.getChainId();
         delete nonces[chainId];
+        transaction.nonce = undefined;
+        return this.sendTransaction(transaction, _retryCount + 1);
+      }
+      if (message.match(/nonce (is )?too low|nonce has already been used/i) && _retryCount < 3) {
+        await this.resyncNonce("sendTransaction returned 'nonce too low'");
         transaction.nonce = undefined;
         return this.sendTransaction(transaction, _retryCount + 1);
       }
