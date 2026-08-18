@@ -54,7 +54,7 @@ const customChainMetadata: ChainMap<ChainMetadata> = {
         nativeToken: {
             name: "Coen",
             symbol: "COEN",
-            decimals: 18,
+            decimals: 6,
         },
         rpcUrls: [
             {

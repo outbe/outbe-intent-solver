@@ -27,16 +27,16 @@ export async function quoteSettleFee(
 
 
 /**
- * Get token decimals (18 for native, query for ERC20)
+ * Get token decimals (native from chain metadata, query for ERC20)
  */
 export async function getTokenDecimals(
   tokenAddress: string,
   chainName: string,
   multiProvider: any,
 ): Promise<number> {
-  // Native token (address zero)
+  // Native token (address zero) — read from chain metadata (COEN=6, BNB=18, …)
   if (tokenAddress === "0x0000000000000000000000000000000000000000") {
-    return 18;
+    return multiProvider.getChainMetadata(chainName).nativeToken?.decimals ?? 18;
   }
 
   // ERC20 token - query decimals
