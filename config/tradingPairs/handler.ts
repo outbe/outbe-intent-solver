@@ -31,7 +31,7 @@ async function getOracleRate(pairName: string): Promise<number | null> {
 
         const provider = new ethers.providers.JsonRpcProvider(OUTBE_RPC);
         const oracle = new ethers.Contract(ORACLE_ADDRESS, IOracleAbi, provider);
-        const {rate} = await oracle.getExchangeRate(base, quote);
+        const rate: BigNumber = await oracle.getExchangeRate(base, quote);
         return rateToFloat(rate);
     } catch {
         return null;
