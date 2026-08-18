@@ -120,7 +120,7 @@ class RouterPrepare extends BasePrepare<
 
         const boostedOutput = calculateSolverOutput(
             inputAmount,
-            pair.exchangeRate as number,
+            pair.rate as number,
             inputDecimals,
             outputDecimals,
             pair.quoteTolerance
@@ -137,7 +137,7 @@ class RouterPrepare extends BasePrepare<
 
         this.log.info({
             msg: "Calculated competitive quote",
-            exchangeRate: pair.exchangeRate,
+            rate: pair.rate,
             minRequired: minRequiredFormatted,
             boostedOutput: boostedOutputFormatted,
             quoteTolerance: `${(pair.quoteTolerance * 100).toFixed(1)}%`,

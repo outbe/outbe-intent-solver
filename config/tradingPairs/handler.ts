@@ -8,7 +8,7 @@ import IOracleAbi from "../../solvers/contracts/IOracle.json" with {type: "json"
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PAIRS_FILE = resolve(__dirname, "pairs.json");
 const OUTBE_RPC = chainMetadata.outbetestnet.rpcUrls[0].http;
-const ORACLE_ADDRESS = "0x000000000000000000000000000000000000EE05";
+const ORACLE_ADDRESS = process.env.ORACLE_ADDRESS || "0x000000000000000000000000000000000000EE05";
 const RATE_DECIMALS = 18;
 
 export interface TradingPair {
@@ -16,7 +16,7 @@ export interface TradingPair {
     destinationChain: string;
     inputToken: string;
     outputToken: string;
-    exchangeRate: number | string;
+    rate: number | string;
     quoteTolerance: number;
 }
 
@@ -64,28 +64,28 @@ async function getUrlRate(url: string): Promise<number> {
     return rate;
 }
 
-async function resolveRate(exchangeRate: number | string): Promise<number> {
-    if (typeof exchangeRate === "number") {
-        return exchangeRate;
+async function resolveRate(rate: number | string): Promise<number> {
+    if (typeof rate === "number") {
+        return rate;
     }
 
     // URL → fetch rate from external endpoint
-    if (exchangeRate.startsWith("http://") || exchangeRate.startsWith("https://")) {
-        return getUrlRate(exchangeRate);
+    if (rate.startsWith("http://") || rate.startsWith("https://")) {
+        return getUrlRate(rate);
     }
 
-    // "1/COEN/USDC" → inverse of oracle rate
-    const isInverse = exchangeRate.startsWith("1/");
-    const pairName = isInverse ? exchangeRate.slice(2) : exchangeRate;
+    // "1/<baseAddr>/<quoteAddr>" → inverse of oracle rate; "<baseAddr>/<quoteAddr>" → direct
+    const isInverse = rate.startsWith("1/");
+    const pairKey = isInverse ? rate.slice(2) : rate;
 
-    const rate = await getOracleRate(pairName);
-    if (rate === null) {
-        throw new Error(`Oracle rate not found for "${pairName}"`);
+    const oracleRate = await getOracleRate(pairKey);
+    if (oracleRate === null) {
+        throw new Error(`Oracle rate not found for "${pairKey}"`);
     }
 
     return isInverse
-        ? parseFloat((1 / rate).toFixed(6))
-        : rate;
+        ? parseFloat((1 / oracleRate).toFixed(6))
+        : oracleRate;
 }
 
 export async function getTradingPairs(): Promise<TradingPair[]> {
@@ -97,21 +97,30 @@ export async function getTradingPairs(): Promise<TradingPair[]> {
             destinationChain: config.destinationChain,
             inputToken: config.inputToken,
             outputToken: config.outputToken,
-            exchangeRate: await resolveRate(config.exchangeRate),
+            rate: await resolveRate(config.rate),
             quoteTolerance: config.quoteTolerance,
         })),
     );
 }
 
-export async function getOracleRates(): Promise<{rate: string; block: string; timestamp: string}[]> {
+export async function getOracleRates(): Promise<{base: string; quote: string; rate: string; block: string; timestamp: string}[]> {
     const provider = new ethers.providers.JsonRpcProvider(OUTBE_RPC);
     const oracle = new ethers.Contract(ORACLE_ADDRESS, IOracleAbi, provider);
-    const {rates, blocks, timestamps} = await oracle.getExchangeRates();
-    return rates.map((rate: BigNumber, i: number) => ({
-        rate: rateToFloat(rate).toString(),
-        block: blocks[i].toString(),
-        timestamp: timestamps[i].toString(),
-    }));
+    const {bases, quotes} = await oracle.getVoteTargets();
+
+    return Promise.all(
+        bases.map(async (base: string, i: number) => {
+            const quote = quotes[i];
+            const {rate, lastBlock, lastTimestamp} = await oracle.getExchangeRateData(base, quote);
+            return {
+                base,
+                quote,
+                rate: rateToFloat(rate).toString(),
+                block: lastBlock.toString(),
+                timestamp: lastTimestamp.toString(),
+            };
+        }),
+    );
 }
 
 export {loadPairsConfig, getOracleRate, resolveRate, PAIRS_FILE};

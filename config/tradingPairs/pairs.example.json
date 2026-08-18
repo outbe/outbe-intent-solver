@@ -4,7 +4,7 @@
     "destinationChain": "bsctestnet",
     "inputToken": "0x0000000000000000000000000000000000000000",
     "outputToken": "0x78366397b72D0c283658DA5A38C450455A97e595",
-    "exchangeRate": "COEN/USDC",
+    "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
     "quoteTolerance": 0.01
   },
   {
@@ -12,7 +12,7 @@
     "destinationChain": "outbetestnet",
     "inputToken": "0x78366397b72D0c283658DA5A38C450455A97e595",
     "outputToken": "0x0000000000000000000000000000000000000000",
-    "exchangeRate": "1/COEN/USDC",
+    "rate": "1/0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
     "quoteTolerance": 0.01
   },
   {
@@ -20,7 +20,7 @@
     "destinationChain": "bsctestnet",
     "inputToken": "0x658897346c9bD7C2F3d7885ED18f60A3759f6518",
     "outputToken": "0x78366397b72D0c283658DA5A38C450455A97e595",
-    "exchangeRate": 1,
+    "rate": 1,
     "quoteTolerance": 0
   },
   {
@@ -28,7 +28,7 @@
     "destinationChain": "outbetestnet",
     "inputToken": "0x78366397b72D0c283658DA5A38C450455A97e595",
     "outputToken": "0x658897346c9bD7C2F3d7885ED18f60A3759f6518",
-    "exchangeRate": 1,
+    "rate": 1,
     "quoteTolerance": 0
   },
   {
@@ -36,7 +36,7 @@
     "destinationChain": "outbetestnet",
     "inputToken": "0x0000000000000000000000000000000000000000",
     "outputToken": "0x658897346c9bD7C2F3d7885ED18f60A3759f6518",
-    "exchangeRate": "COEN/USDC",
+    "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
     "quoteTolerance": 0.01
   },
   {
@@ -44,7 +44,7 @@
     "destinationChain": "outbetestnet",
     "inputToken": "0x658897346c9bD7C2F3d7885ED18f60A3759f6518",
     "outputToken": "0x0000000000000000000000000000000000000000",
-    "exchangeRate": "1/COEN/USDC",
+    "rate": "1/0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
     "quoteTolerance": 0.01
   }
 ]

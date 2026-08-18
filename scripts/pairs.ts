@@ -24,9 +24,9 @@ function savePairs(pairs: TradingPair[]) {
 }
 
 function formatPair(pair: TradingPair, index: number): string {
-    const rate = typeof pair.exchangeRate === "string"
-        ? `oracle(${pair.exchangeRate})`
-        : pair.exchangeRate;
+    const rate = typeof pair.rate === "string"
+        ? `oracle(${pair.rate})`
+        : pair.rate;
     return `[${index}] ${pair.originChain} → ${pair.destinationChain} | ${pair.inputToken} → ${pair.outputToken} | rate: ${rate} | tolerance: ${pair.quoteTolerance}`;
 }
 
@@ -59,20 +59,20 @@ async function add() {
     const inputToken = await input({message: "Input token address:", default: "0x0000000000000000000000000000000000000000"});
     const outputToken = await input({message: "Output token address:", default: "0x0000000000000000000000000000000000000000"});
     const rateInput = await input({
-        message: "Exchange rate (number | oracle key e.g. COEN/USDC | 1/COEN/USDC for inverse | URL):",
+        message: "Rate (number | <baseAddr>/<quoteAddr> for oracle | 1/<baseAddr>/<quoteAddr> for inverse | URL):",
     });
     const quoteTolerance = parseFloat(
         await input({message: "Quote tolerance — extra % added to output (e.g. 0.01 = 1%):", default: "0"}),
     );
 
-    const exchangeRate = isNaN(Number(rateInput)) ? rateInput : Number(rateInput);
+    const rate = isNaN(Number(rateInput)) ? rateInput : Number(rateInput);
 
     const pairs = loadPairs();
-    pairs.push({originChain, destinationChain, inputToken, outputToken, exchangeRate, quoteTolerance});
+    pairs.push({originChain, destinationChain, inputToken, outputToken, rate, quoteTolerance});
     savePairs(pairs);
 
     try {
-        const resolved = await resolveRate(exchangeRate);
+        const resolved = await resolveRate(rate);
         console.log(`Pair added. Current rate: ${resolved}`);
     } catch (e: any) {
         console.log(`Pair added. ⚠ Could not resolve rate: ${e.message}`);
@@ -123,7 +123,7 @@ async function oracle() {
 
     console.log(`\n${rates.length} oracle rate(s):\n`);
     rates.forEach((r, i) => {
-        console.log(`  [${i}] rate: ${r.rate}  block: ${r.block}  timestamp: ${r.timestamp}`);
+        console.log(`  [${i}] ${r.base}/${r.quote}  rate: ${r.rate}  block: ${r.block}  timestamp: ${r.timestamp}`);
     });
     console.log();
 }
