@@ -102,30 +102,30 @@ export function calculateSolverOutput(
   outputDecimals: number,
   quoteTolerance?: number,
 ): BigNumber {
-  const RATE_DECIMALS = 18; // Ethereum standard precision
+  const RATE_SCALE = 18; // fixed-point scale for the rate itself: multiplied in below, divided out again — cancels out
 
   // Convert exchangeRate to BigNumber with 18 decimals precision
   // toFixed, not toString: tiny rates (e.g. 4.1e-12) stringify to exponential notation, which parseUnits rejects
   const exchangeRateBN = ethers.utils.parseUnits(
-    exchangeRate.toFixed(RATE_DECIMALS),
-    RATE_DECIMALS
+    exchangeRate.toFixed(RATE_SCALE),
+    RATE_SCALE
   );
 
-  // Calculate base output: (inputAmount * exchangeRate * 10^outputDecimals) / 10^(inputDecimals + RATE_DECIMALS)
+  // Calculate base output: (inputAmount * exchangeRate * 10^outputDecimals) / 10^(inputDecimals + RATE_SCALE)
   let output = inputAmount
     .mul(exchangeRateBN)
     .mul(BigNumber.from(10).pow(outputDecimals))
-    .div(BigNumber.from(10).pow(inputDecimals + RATE_DECIMALS));
+    .div(BigNumber.from(10).pow(inputDecimals + RATE_SCALE));
 
   // Apply boost if provided
   if (quoteTolerance !== undefined && quoteTolerance > 0) {
     const boostMultiplierBN = ethers.utils.parseUnits(
       (1 + quoteTolerance).toString(),
-      RATE_DECIMALS
+      RATE_SCALE
     );
     output = output
       .mul(boostMultiplierBN)
-      .div(BigNumber.from(10).pow(RATE_DECIMALS));
+      .div(BigNumber.from(10).pow(RATE_SCALE));
   }
 
   return output;
