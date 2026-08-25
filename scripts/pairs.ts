@@ -2,10 +2,9 @@ import {readFileSync, writeFileSync, existsSync, copyFileSync} from "fs";
 import {resolve, dirname} from "path";
 import {fileURLToPath} from "url";
 import {input, select, confirm} from "@inquirer/prompts";
-import type {TradingPair} from "../config/tradingPairs/handler.js";
-import {resolveRate} from "../config/tradingPairs/handler.js";
+import {getOracleRates, resolveRate} from "../config/tradingPairs/handler.js";
+import type {TradingPair} from "../config/tradingPairs/pairs.js";
 import {chainMetadata} from "../config/chainMetadata.js";
-import {getOracleRates} from "../config/tradingPairs/handler.js";
 
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -24,10 +23,9 @@ function savePairs(pairs: TradingPair[]) {
 }
 
 function formatPair(pair: TradingPair, index: number): string {
-    const rate = typeof pair.rate === "string"
-        ? `oracle(${pair.rate})`
-        : pair.rate;
-    return `[${index}] ${pair.originChain} → ${pair.destinationChain} | ${pair.inputToken} → ${pair.outputToken} | rate: ${rate} | tolerance: ${pair.quoteTolerance}`;
+    const rate = typeof pair.rate === "string" ? `oracle(${pair.rate})` : pair.rate;
+    const arrow = pair.reversible ? "↔" : "→";
+    return `[${index}] ${pair.originChain} ${arrow} ${pair.destinationChain} | ${pair.inputToken} ${arrow} ${pair.outputToken} | rate: ${rate} | tolerance: ${pair.quoteTolerance}`;
 }
 
 // --- Commands ---
@@ -64,11 +62,15 @@ async function add() {
     const quoteTolerance = parseFloat(
         await input({message: "Quote tolerance — extra % added to output (e.g. 0.01 = 1%):", default: "0"}),
     );
+    const reversible = await confirm({
+        message: "Also trade the other way round, at the inverse rate?",
+        default: true,
+    });
 
     const rate = isNaN(Number(rateInput)) ? rateInput : Number(rateInput);
 
     const pairs = loadPairs();
-    pairs.push({originChain, destinationChain, inputToken, outputToken, rate, quoteTolerance});
+    pairs.push({originChain, destinationChain, inputToken, outputToken, rate, quoteTolerance, reversible});
     savePairs(pairs);
 
     try {
@@ -86,14 +88,9 @@ async function remove() {
         return;
     }
 
-    const choices = pairs.map((pair, i) => ({
-        name: formatPair(pair, i),
-        value: i,
-    }));
-
     const index = await select({
         message: "Select pair to remove:",
-        choices,
+        choices: pairs.map((pair, i) => ({name: formatPair(pair, i), value: i})),
     });
 
     pairs.splice(index, 1);
@@ -108,7 +105,8 @@ async function list() {
         return;
     }
 
-    console.log(`\n${pairs.length} trading pair(s):\n`);
+    const reversible = pairs.filter((pair) => pair.reversible).length;
+    console.log(`\n${pairs.length} configured pair(s), ${pairs.length + reversible} traded (↔ = both directions):\n`);
     pairs.forEach((pair, i) => console.log(formatPair(pair, i)));
     console.log();
 }

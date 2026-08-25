@@ -16,6 +16,10 @@ const metadata: RouterMetadata = {
     },
     {
       address: ROUTER_CONTRACT,
+      chainName: "sepolia",
+    },
+    {
+      address: ROUTER_CONTRACT,
       chainName: "outbetestnet",
     },
   ],

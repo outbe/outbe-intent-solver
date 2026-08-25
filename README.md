@@ -27,8 +27,9 @@ solver/
 │  ├── types.ts
 │  └── tradingPairs/
 │      ├── handler.ts
+│      ├── pairs.ts            # Pair type + reversible expansion
 │      ├── pairs.json          # Working config (gitignored)
-│      └── pairs.example.json  # Example pairs (committed)
+│      └── pairs.example.json  # Example config (committed)
 └── solvers/
     ├── index.ts
     ├── BaseFiller.ts
@@ -61,7 +62,8 @@ solver/
 - **patch-bigint-buffer-warn.js**: A script to suppress specific warnings related to BigInt and Buffer, ensuring cleaner console output.
 - **config/**: Global configuration for the solver.
     - **tradingPairs/**: Trading pairs configuration.
-        - **handler.ts**: Loads pairs from JSON, resolves oracle exchange rates.
+        - **handler.ts**: Loads pairs from JSON, resolves oracle/URL exchange rates.
+        - **pairs.ts**: Trading pair type, expands `reversible` pairs into both directions.
         - **pairs.json**: Working pairs config (gitignored, created via `yarn pairs:init`).
         - **pairs.example.json**: Example pairs config (committed to git).
 - **solvers/**: Contains implementations of different solvers and common utilities.
@@ -186,30 +188,37 @@ Example `pairs.json`:
 [
   {
     "originChain": "outbetestnet",
-    "destinationChain": "bsctestnet",
+    "destinationChain": "sepolia",
     "inputToken": "0x0000000000000000000000000000000000000000",
-    "outputToken": "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae",
-    "exchangeRate": "COEN/USDC",
-    "quoteTolerance": 0.01
+    "outputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
+    "quoteTolerance": 0.01,
+    "reversible": true
   },
   {
-    "originChain": "bsctestnet",
-    "destinationChain": "outbetestnet",
-    "inputToken": "0xFEcF2FcDcF899b907371165bf26C353A7b6950ae",
-    "outputToken": "0x0000000000000000000000000000000000000000",
-    "exchangeRate": 1,
-    "quoteTolerance": 0
+    "originChain": "outbetestnet",
+    "destinationChain": "sepolia",
+    "inputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "outputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "rate": 1,
+    "quoteTolerance": 0,
+    "reversible": true
   }
 ]
 ```
 
 **Parameters**:
-- `exchangeRate`: One of three formats:
+- `rate`: One of three formats:
     - **Fixed**: number, e.g. `1`
-    - **Oracle**: string key, e.g. `"COEN/USDC"` or `"1/COEN/USDC"` for inverse
+    - **Oracle**: `"<baseAddr>/<quoteAddr>"`, or `"1/<baseAddr>/<quoteAddr>"` for the inverse
     - **URL**: e.g. `"https://my-api.com/rate"` — must return JSON `{"exchangeRate": "0.023271"}`
 - `quoteTolerance`: Extra % added to output to increase winning chances (e.g., `0.01` = 1% more)
 - `inputToken` / `outputToken`: Token addresses. Use `0x0000000000000000000000000000000000000000` for native tokens (COEN, BNB).
+- `reversible`: Optional. `true` also trades the pair the other way round — chains and tokens swapped, rate
+  inverted (`4` → `0.25`, `"A/B"` → `"1/A/B"`). One entry, two traded directions, nothing to keep in sync.
+  Omitted or `false` = one-way only.
+
+`yarn pairs:list` marks reversible pairs with `↔` and prints how many directions are actually traded.
 
 Oracle rates are fetched on-chain at each order. Use `yarn pairs:oracle` to see available oracle pairs.
 

@@ -44,6 +44,41 @@ const customChainMetadata: ChainMap<ChainMetadata> = {
         },
     },
 
+    sepolia: {
+        protocol: ProtocolType.Ethereum,
+        chainId: 11155111,
+        domainId: 11155111,
+        name: "sepolia",
+        displayName: "Sepolia",
+        nativeToken: {
+            name: "Ether",
+            symbol: "ETH",
+            decimals: 18,
+        },
+        rpcUrls: [
+            {
+                http: 'https://ethereum-sepolia-rpc.publicnode.com',
+                pagination: {
+                    maxBlockRange: 1000,
+                },
+            },
+            {
+                http: 'https://rpc.sepolia.org',
+                pagination: {
+                    maxBlockRange: 1000,
+                },
+            },
+        ],
+        blockExplorers: [
+            {
+                name: "Etherscan",
+                url: "https://sepolia.etherscan.io",
+                apiUrl: "https://api-sepolia.etherscan.io/api",
+                family: ExplorerFamily.Etherscan,
+            },
+        ],
+    },
+
     outbetestnet: {
 
         protocol: ProtocolType.Ethereum,

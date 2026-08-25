@@ -105,8 +105,9 @@ export function calculateSolverOutput(
   const RATE_DECIMALS = 18; // Ethereum standard precision
 
   // Convert exchangeRate to BigNumber with 18 decimals precision
+  // toFixed, not toString: tiny rates (e.g. 4.1e-12) stringify to exponential notation, which parseUnits rejects
   const exchangeRateBN = ethers.utils.parseUnits(
-    exchangeRate.toString(),
+    exchangeRate.toFixed(RATE_DECIMALS),
     RATE_DECIMALS
   );
 

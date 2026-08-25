@@ -3,6 +3,7 @@ import {readFileSync, existsSync} from "fs";
 import {resolve, dirname} from "path";
 import {fileURLToPath} from "url";
 import {chainMetadata} from "../chainMetadata.js";
+import {expandPairs, type RateSource, type TradingPair} from "./pairs.js";
 import IOracleAbi from "../../solvers/contracts/IOracle.json" with {type: "json"};
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -11,14 +12,7 @@ const OUTBE_RPC = chainMetadata.outbetestnet.rpcUrls[0].http;
 const ORACLE_ADDRESS = process.env.ORACLE_ADDRESS || "0x000000000000000000000000000000000000EE05";
 const RATE_DECIMALS = 6;
 
-export interface TradingPair {
-    originChain: string;
-    destinationChain: string;
-    inputToken: string;
-    outputToken: string;
-    rate: number | string;
-    quoteTolerance: number;
-}
+export type {TradingPair};
 
 function rateToFloat(rate: BigNumber): number {
     return parseFloat(ethers.utils.formatUnits(rate, RATE_DECIMALS));
@@ -64,42 +58,37 @@ async function getUrlRate(url: string): Promise<number> {
     return rate;
 }
 
-async function resolveRate(rate: number | string): Promise<number> {
+async function resolveRate(rate: RateSource): Promise<number> {
     if (typeof rate === "number") {
         return rate;
     }
 
-    // URL → fetch rate from external endpoint
-    if (rate.startsWith("http://") || rate.startsWith("https://")) {
-        return getUrlRate(rate);
-    }
-
-    // "1/<baseAddr>/<quoteAddr>" → inverse of oracle rate; "<baseAddr>/<quoteAddr>" → direct
+    // "1/<source>" → inverse of whatever <source> resolves to
     const isInverse = rate.startsWith("1/");
-    const pairKey = isInverse ? rate.slice(2) : rate;
+    const source = isInverse ? rate.slice(2) : rate;
 
-    const oracleRate = await getOracleRate(pairKey);
-    if (oracleRate === null) {
-        throw new Error(`Oracle rate not found for "${pairKey}"`);
+    // URL → external endpoint; otherwise "<baseAddr>/<quoteAddr>" oracle pair
+    let resolved: number | null;
+    if (source.startsWith("http://") || source.startsWith("https://")) {
+        resolved = await getUrlRate(source);
+    } else {
+        resolved = await getOracleRate(source);
+        if (resolved === null) {
+            throw new Error(`Oracle rate not found for "${source}"`);
+        }
     }
 
-    return isInverse
-        ? parseFloat((1 / oracleRate).toFixed(6))
-        : oracleRate;
+    if (!resolved) {
+        throw new Error(`Rate resolved to zero for "${rate}"`);
+    }
+    return isInverse ? 1 / resolved : resolved;
 }
 
 export async function getTradingPairs(): Promise<TradingPair[]> {
-    const configs = loadPairsConfig();
+    const pairs = expandPairs(loadPairsConfig());
 
     return Promise.all(
-        configs.map(async (config) => ({
-            originChain: config.originChain,
-            destinationChain: config.destinationChain,
-            inputToken: config.inputToken,
-            outputToken: config.outputToken,
-            rate: await resolveRate(config.rate),
-            quoteTolerance: config.quoteTolerance,
-        })),
+        pairs.map(async (pair) => ({...pair, rate: await resolveRate(pair.rate)})),
     );
 }
 

@@ -1,50 +1,47 @@
 [
   {
     "originChain": "outbetestnet",
-    "destinationChain": "bsctestnet",
-    "inputToken": "0x0000000000000000000000000000000000000000",
-    "outputToken": "0x78366397b72D0c283658DA5A38C450455A97e595",
-    "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
-    "quoteTolerance": 0.01
-  },
-  {
-    "originChain": "bsctestnet",
     "destinationChain": "outbetestnet",
-    "inputToken": "0x78366397b72D0c283658DA5A38C450455A97e595",
-    "outputToken": "0x0000000000000000000000000000000000000000",
-    "rate": "1/0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
-    "quoteTolerance": 0.01
+    "inputToken": "0x0000000000000000000000000000000000000000",
+    "outputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
+    "quoteTolerance": 0.01,
+    "reversible": true
   },
   {
     "originChain": "outbetestnet",
     "destinationChain": "bsctestnet",
-    "inputToken": "0x6f97177ccf210A7dc0A6e178b41F3aB033F8D727",
-    "outputToken": "0x78366397b72D0c283658DA5A38C450455A97e595",
-    "rate": 1,
-    "quoteTolerance": 0
-  },
-  {
-    "originChain": "bsctestnet",
-    "destinationChain": "outbetestnet",
-    "inputToken": "0x78366397b72D0c283658DA5A38C450455A97e595",
-    "outputToken": "0x6f97177ccf210A7dc0A6e178b41F3aB033F8D727",
-    "rate": 1,
-    "quoteTolerance": 0
-  },
-  {
-    "originChain": "outbetestnet",
-    "destinationChain": "outbetestnet",
     "inputToken": "0x0000000000000000000000000000000000000000",
-    "outputToken": "0x6f97177ccf210A7dc0A6e178b41F3aB033F8D727",
+    "outputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
     "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
-    "quoteTolerance": 0.01
+    "quoteTolerance": 0.01,
+    "reversible": true
   },
   {
     "originChain": "outbetestnet",
-    "destinationChain": "outbetestnet",
-    "inputToken": "0x6f97177ccf210A7dc0A6e178b41F3aB033F8D727",
-    "outputToken": "0x0000000000000000000000000000000000000000",
-    "rate": "1/0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
-    "quoteTolerance": 0.01
+    "destinationChain": "sepolia",
+    "inputToken": "0x0000000000000000000000000000000000000000",
+    "outputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
+    "quoteTolerance": 0.01,
+    "reversible": true
+  },
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "bsctestnet",
+    "inputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "outputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "rate": 1,
+    "quoteTolerance": 0,
+    "reversible": true
+  },
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "sepolia",
+    "inputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "outputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "rate": 1,
+    "quoteTolerance": 0,
+    "reversible": true
   }
 ]
