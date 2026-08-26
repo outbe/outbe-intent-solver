@@ -6,12 +6,14 @@ import type {
   TransactionResponse,
 } from "@ethersproject/providers";
 import { Wallet } from "@ethersproject/wallet";
+import { BigNumber, type BigNumberish } from "@ethersproject/bignumber";
 import type { Wordlist } from "@ethersproject/wordlists";
 
 import { Logger } from "@ethersproject/logger";
 const ethersLogger = new Logger("NonceKeeperWallet");
 
 import { log } from "./logger.js";
+import { getGasMultiplier } from "./config/chainMetadata.js";
 
 const nonces: Record<number, Promise<number>> = {};
 // Track nonce at startup + how many tx-es this process issued, per chain.
@@ -62,10 +64,36 @@ export class NonceKeeperWallet extends Wallet {
     sentCount[chainId] = 0;
   }
 
+  /**
+   * Multiply the estimated fee by the chain's `gasMultiplier` from chainMetadata.ts.
+   */
+  private async applyGasMultiplier(
+    transaction: Deferrable<TransactionRequest>,
+  ): Promise<void> {
+    if (transaction.gasPrice != null || transaction.maxFeePerGas != null) return;
+
+    const multiplier = getGasMultiplier(await this.getChainId());
+    if (!(multiplier > 1)) return;
+
+    const scale = (value: BigNumberish) =>
+      BigNumber.from(value).mul(Math.round(multiplier * 100)).div(100);
+
+    const {gasPrice, maxFeePerGas, maxPriorityFeePerGas} = await this.provider.getFeeData();
+
+    if (maxFeePerGas && maxPriorityFeePerGas) {
+      transaction.maxFeePerGas = scale(maxFeePerGas);
+      transaction.maxPriorityFeePerGas = scale(maxPriorityFeePerGas);
+    } else if (gasPrice) {
+      transaction.gasPrice = scale(gasPrice);
+    }
+  }
+
   async sendTransaction(
     transaction: Deferrable<TransactionRequest>,
     _retryCount = 0,
   ): Promise<TransactionResponse> {
+    await this.applyGasMultiplier(transaction);
+
     try {
       // this check is necessary in order to not generate new nonces when a tx is going to fail
       await super.estimateGas(transaction);

@@ -116,27 +116,30 @@ export class AuctionManager {
     }
 
     /**
-     * Wait for commit phase to end using precise sleep based on deadline
+     * Wait for commit phase to end.
      */
     async waitForCommitEnd(orderId: string): Promise<void> {
-        const commitDeadline = await this.auctionCt.getCommitDeadline(orderId);
+        const commitDeadline = (await this.auctionCt.getCommitDeadline(orderId)).toNumber();
         const chainName = await this.getChainName(orderId);
         const provider = this.multiProvider.getProvider(chainName);
-        const block = await provider.getBlock("latest");
 
-        const waitMs = (commitDeadline.toNumber() - block.timestamp) * 1000;
-
-        if (waitMs > 0) {
+        let block = await provider.getBlock("latest");
+        if (block.timestamp < commitDeadline) {
             this.log.info({
                 msg: "Waiting for commit phase to end",
                 orderId,
-                commitDeadline: commitDeadline.toNumber(),
-                waitSeconds: Math.ceil(waitMs / 1000),
+                commitDeadline,
+                waitSeconds: commitDeadline - block.timestamp,
             });
-            await new Promise((resolve) => setTimeout(resolve, waitMs));
         }
 
-        this.log.info({msg: "Commit phase ended", orderId});
+        while (block.timestamp < commitDeadline) {
+            const remainingMs = (commitDeadline - block.timestamp) * 1000;
+            await new Promise((resolve) => setTimeout(resolve, Math.min(remainingMs, this.pollInterval)));
+            block = await provider.getBlock("latest");
+        }
+
+        this.log.info({msg: "Commit phase ended", orderId, blockTimestamp: block.timestamp});
     }
 
     /**
@@ -249,6 +252,15 @@ export class AuctionManager {
     /**
      * Resolve chainName from auction contract's provider
      */
+    /**
+     * Gas settings from chainMetadata. Commit and reveal windows are seconds wide — a tx priced by
+     * default fee estimation sits in the mempool past the deadline and reverts (RevealPhaseNotActive).
+     */
+    private async txOverrides(): Promise<Partial<ethers.providers.TransactionRequest>> {
+        const network = await this.auctionCt.provider.getNetwork();
+        return this.multiProvider.getTransactionOverrides(network.chainId);
+    }
+
     private async getChainName(orderId: string): Promise<string> {
         const network = await this.auctionCt.provider.getNetwork();
         return chainIdsToName[network.chainId.toString()];

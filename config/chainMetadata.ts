@@ -3,8 +3,12 @@ import {z} from "zod";
 import {ChainMap, ChainMetadata, ChainMetadataSchema, ExplorerFamily} from "@hyperlane-xyz/sdk";
 import {ProtocolType} from "@hyperlane-xyz/utils";
 
+/** Chain metadata plus the solver's own knobs. */
+type SolverChainMetadata = ChainMetadata & {
+    gasMultiplier?: number;
+};
 
-const customChainMetadata: ChainMap<ChainMetadata> = {
+const customChainMetadata: ChainMap<SolverChainMetadata> = {
     bsctestnet: {
         protocol: ProtocolType.Ethereum,
         chainId: 97,
@@ -57,17 +61,18 @@ const customChainMetadata: ChainMap<ChainMetadata> = {
         },
         rpcUrls: [
             {
-                http: 'https://ethereum-sepolia-rpc.publicnode.com',
+                http: 'https://clean-wiser-energy.ethereum-sepolia.quiknode.pro/8b14fb75c5bb2dee7e2963936532ea1d04c833fa/',
                 pagination: {
                     maxBlockRange: 1000,
                 },
             },
             {
-                http: 'https://rpc.sepolia.org',
+                http: 'https://ethereum-sepolia-rpc.publicnode.com',
                 pagination: {
                     maxBlockRange: 1000,
                 },
-            },
+            }
+
         ],
         blockExplorers: [
             {
@@ -77,6 +82,7 @@ const customChainMetadata: ChainMap<ChainMetadata> = {
                 family: ExplorerFamily.Etherscan,
             },
         ],
+        gasMultiplier: 1,
     },
 
     outbetestnet: {
@@ -117,4 +123,10 @@ const chainMetadata = customChainMetadata
 
 z.record(z.string(), ChainMetadataSchema).parse(chainMetadata);
 
-export {chainMetadata};
+/** Fee multiplier configured for a chain, 1 when unset. */
+function getGasMultiplier(chainId: number | string): number {
+    const chain = Object.values(chainMetadata).find((c) => c.chainId.toString() === chainId.toString());
+    return chain?.gasMultiplier ?? 1;
+}
+
+export {chainMetadata, getGasMultiplier};

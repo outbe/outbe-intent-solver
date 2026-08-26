@@ -10,7 +10,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PAIRS_FILE = resolve(__dirname, "pairs.json");
 const OUTBE_RPC = chainMetadata.outbetestnet.rpcUrls[0].http;
 const ORACLE_ADDRESS = process.env.ORACLE_ADDRESS || "0x000000000000000000000000000000000000EE05";
-const ORACLE_DECIMALS = 6;
+const ORACLE_DECIMALS = 18;
 
 export type {TradingPair};
 
