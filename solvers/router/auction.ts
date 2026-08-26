@@ -252,15 +252,6 @@ export class AuctionManager {
     /**
      * Resolve chainName from auction contract's provider
      */
-    /**
-     * Gas settings from chainMetadata. Commit and reveal windows are seconds wide — a tx priced by
-     * default fee estimation sits in the mempool past the deadline and reverts (RevealPhaseNotActive).
-     */
-    private async txOverrides(): Promise<Partial<ethers.providers.TransactionRequest>> {
-        const network = await this.auctionCt.provider.getNetwork();
-        return this.multiProvider.getTransactionOverrides(network.chainId);
-    }
-
     private async getChainName(orderId: string): Promise<string> {
         const network = await this.auctionCt.provider.getNetwork();
         return chainIdsToName[network.chainId.toString()];
