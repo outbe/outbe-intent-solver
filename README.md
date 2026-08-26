@@ -66,6 +66,8 @@ solver/
         - **pairs.ts**: Trading pair type, expands `reversible` pairs into both directions.
         - **pairs.json**: Working pairs config (gitignored, created via `yarn pairs:init`).
         - **pairs.example.json**: Example pairs config (committed to git).
+- **scripts/solver-escrow/**: CLI for solver collateral — `balance.ts`, `deposit.ts`, `withdraw.ts`, plus
+  `common.ts` (provider/wallet, escrow lookup via `router.SOLVER_ESCROW()`, token decimals & symbol).
 - **solvers/**: Contains implementations of different solvers and common utilities.
     - **BaseListener.ts**: An abstract base class that provides common functionality for event listeners. It handles setting up contract connections and defines the interface for parsing event arguments.
     - **BaseFiller.ts**: An abstract base class that provides common functionality for fillers. It handles the solver's lifecycle `prepareIntent`, `fill`, and `settle`.
@@ -232,6 +234,32 @@ const allowBlockLists: AllowBlockLists = {
   blockList: [],
 };
 ```
+
+### Solver Collateral (SolverEscrow)
+
+The solver has to post collateral before it can fill anything — the escrow address is read from
+`router.SOLVER_ESCROW()` on the chain you pass, so the router must be deployed there.
+
+```sh
+yarn escrow:balance  [chain] [token|native[,token2,...]]            # total / locked / available
+yarn escrow:deposit  [chain] [token|native] [amount]                # approve + deposit
+yarn escrow:withdraw [chain] [token|native] [amount|all]
+```
+
+Chain names come from `chainMetadata.ts`, amounts are human-readable (`0.1`, `100`), everything acts on the
+`PRIVATE_KEY` address. Deposit sets the escrow as an ERC6909 operator on The Compact on first run and
+approves the ERC20 when needed; withdraw takes `all`.
+
+Arguments are optional: run any command bare and it asks for chain, token and amount interactively
+(like `pairs:add`), offering the tokens from `pairs.json` for that chain.
+
+```sh
+yarn escrow:deposit bsctestnet 0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454 100
+```
+
+> The router in `solvers/router/config/metadata.ts` currently uses one address (`ROUTER_CONTRACT`) for
+> every chain, and it is deployed on **bsctestnet only** — escrow commands on outbetestnet and sepolia
+> fail on `SOLVER_ESCROW()` until the router is deployed there or given a per-chain address.
 
 ## Usage
 

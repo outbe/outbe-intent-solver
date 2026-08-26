@@ -18,6 +18,9 @@
     "pairs:remove": "tsx scripts/pairs.ts remove",
     "pairs:list": "tsx scripts/pairs.ts list",
     "pairs:oracle": "tsx scripts/pairs.ts oracle",
+    "escrow:balance": "tsx scripts/solver-escrow/balance.ts",
+    "escrow:deposit": "tsx scripts/solver-escrow/deposit.ts",
+    "escrow:withdraw": "tsx scripts/solver-escrow/withdraw.ts",
     "pairs:rate": "tsx scripts/test-oracle.ts"
   },
   "devDependencies": {
