@@ -82,7 +82,7 @@ const customChainMetadata: ChainMap<SolverChainMetadata> = {
                 family: ExplorerFamily.Etherscan,
             },
         ],
-        gasMultiplier: 1,
+        gasMultiplier: 2,
     },
 
     outbetestnet: {
