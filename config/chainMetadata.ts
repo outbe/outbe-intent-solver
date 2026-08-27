@@ -65,12 +65,6 @@ const customChainMetadata: ChainMap<SolverChainMetadata> = {
                 pagination: {
                     maxBlockRange: 1000,
                 },
-            },
-            {
-                http: 'https://ethereum-sepolia-rpc.publicnode.com',
-                pagination: {
-                    maxBlockRange: 1000,
-                },
             }
 
         ],

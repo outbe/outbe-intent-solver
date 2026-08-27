@@ -22,14 +22,23 @@ import {AuctionManager} from "./auction.js";
 
 export type RouterRule = BaseRule<RouterMetadata, OpenEventArgs, IntentData>;
 
+/**
+ * Per-order handles on the destination chain. Never store these on the instance: one RouterPrepare
+ * serves every order, and an auction round sits in `await` for a minute — a concurrent order with a
+ * different destination would overwrite them mid-flight, and the reveal would land on another chain's
+ * auction contract, where the order does not exist.
+ */
+type OrderContext = {
+    signer: any;
+    routerCt: any;
+    auction: AuctionManager;
+};
+
 class RouterPrepare extends BasePrepare<
     RouterMetadata,
     OpenEventArgs,
     IntentData
 > {
-    private destinationCt!: any;
-    private auctionManager!: AuctionManager;
-    private destinationSigner!: any;
 
     constructor(
         multiProvider: MultiProvider,
@@ -45,14 +54,15 @@ class RouterPrepare extends BasePrepare<
         orderId: string,
         outputAmount: BigNumber,
         data: IntentData,
+        ctx: OrderContext,
     ): Promise<void> {
-        const fillerAddress = await this.destinationSigner.getAddress();
+        const fillerAddress = await ctx.signer.getAddress();
         const chainId = data.fillInstructions[0].destinationChainId.toString();
         const tokenAddress = bytes32ToAddress(data.maxSpent[0].token);
 
         // Check escrow collateral
-        const escrowAddress = await this.destinationCt.SOLVER_ESCROW();
-        const escrow = SolverEscrow__factory.connect(escrowAddress, this.destinationSigner);
+        const escrowAddress = await ctx.routerCt.SOLVER_ESCROW();
+        const escrow = SolverEscrow__factory.connect(escrowAddress, ctx.signer);
         const hasCollateral = await escrow.hasMinCollateral(fillerAddress, tokenAddress, outputAmount);
 
         if (!hasCollateral) {
@@ -152,7 +162,8 @@ class RouterPrepare extends BasePrepare<
      */
     private async claimOrder(
         parsedArgs: OpenEventArgs,
-        data: IntentData
+        data: IntentData,
+        ctx: OrderContext,
     ): Promise<boolean> {
         const originData = data.fillInstructions[0].originData;
 
@@ -161,7 +172,7 @@ class RouterPrepare extends BasePrepare<
             orderId: parsedArgs.orderId,
         });
 
-        const tx = await this.destinationCt.claimOrder(
+        const tx = await ctx.routerCt.claimOrder(
             parsedArgs.orderId,
             originData,
         );
@@ -232,8 +243,9 @@ class RouterPrepare extends BasePrepare<
     private async runAuctionRound(
         parsedArgs: OpenEventArgs,
         data: IntentData,
+        ctx: OrderContext,
     ): Promise<{shouldFill: boolean; winningAmount?: BigNumber}> {
-        const auctionEnded = await this.auctionManager.isAuctionEnded(parsedArgs.orderId);
+        const auctionEnded = await ctx.auction.isAuctionEnded(parsedArgs.orderId);
 
         if (auctionEnded) {
             this.log.info({
@@ -243,39 +255,39 @@ class RouterPrepare extends BasePrepare<
         } else {
             // Calculate output and run pre-commit checks
             const bestOutputAmount = await this.calculateBestOutput(data);
-            await this.preCommitChecks(parsedArgs.orderId, bestOutputAmount, data);
+            await this.preCommitChecks(parsedArgs.orderId, bestOutputAmount, data, ctx);
 
             // Commit phase
-            const {salt, outputAmount} = await this.auctionManager.commitQuote(
+            const {salt, outputAmount} = await ctx.auction.commitQuote(
                 parsedArgs.orderId,
                 bestOutputAmount,
                 data,
             );
 
             // Wait for commit phase to end
-            await this.auctionManager.waitForCommitEnd(parsedArgs.orderId);
+            await ctx.auction.waitForCommitEnd(parsedArgs.orderId);
 
             // Reveal phase
-            await this.auctionManager.revealQuote(parsedArgs.orderId, outputAmount, salt, data);
+            await ctx.auction.revealQuote(parsedArgs.orderId, outputAmount, salt, data);
 
             // Wait for auction to end
-            await this.auctionManager.waitForAuctionEnd(parsedArgs.orderId);
+            await ctx.auction.waitForAuctionEnd(parsedArgs.orderId);
         }
 
         // Check winner
-        const winningAmount = await this.auctionManager.getWinner(parsedArgs.orderId, data);
+        const winningAmount = await ctx.auction.getWinner(parsedArgs.orderId, data);
 
         if (!winningAmount) {
             // Lost — wait for possible auction restart (winner disqualified)
-            const restarted = await this.auctionManager.waitForAuctionRestart(parsedArgs.orderId);
+            const restarted = await ctx.auction.waitForAuctionRestart(parsedArgs.orderId);
             if (restarted) {
-                return this.runAuctionRound(parsedArgs, data);
+                return this.runAuctionRound(parsedArgs, data, ctx);
             }
             return {shouldFill: false};
         }
 
         // Claim on router
-        const claimed = await this.claimOrder(parsedArgs, data);
+        const claimed = await this.claimOrder(parsedArgs, data, ctx);
 
         if (claimed) {
             return {shouldFill: true, winningAmount};
@@ -316,23 +328,24 @@ class RouterPrepare extends BasePrepare<
             );
             const _chainId = data.fillInstructions[0].destinationChainId.toString();
 
-            this.destinationSigner = this.multiProvider.getSigner(_chainId);
-            this.destinationCt = Router__factory.connect(
-                destinationSettler,
-                this.destinationSigner
-            );
+            const signer = this.multiProvider.getSigner(_chainId);
+            const routerCt = Router__factory.connect(destinationSettler, signer);
 
-            const auctionAddress = await this.destinationCt.AUCTION();
-            const auctionCt = Auction__factory.connect(auctionAddress, this.destinationSigner);
-            this.auctionManager = new AuctionManager(
-                auctionCt,
-                this.destinationSigner,
-                this.multiProvider,
-                this.log,
-                this.defaultPollInterval,
-            );
+            const auctionAddress = await routerCt.AUCTION();
+            const auctionCt = Auction__factory.connect(auctionAddress, signer);
+            const ctx: OrderContext = {
+                signer,
+                routerCt,
+                auction: new AuctionManager(
+                    auctionCt,
+                    signer,
+                    this.multiProvider,
+                    this.log,
+                    this.defaultPollInterval,
+                ),
+            };
 
-            return await this.runAuctionRound(parsedArgs, data);
+            return await this.runAuctionRound(parsedArgs, data, ctx);
         } catch (error: any) {
             this.log.error({
                 msg: "Cannot process order - validation failed",
