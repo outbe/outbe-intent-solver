@@ -3,12 +3,7 @@ import {z} from "zod";
 import {ChainMap, ChainMetadata, ChainMetadataSchema, ExplorerFamily} from "@hyperlane-xyz/sdk";
 import {ProtocolType} from "@hyperlane-xyz/utils";
 
-/** Chain metadata plus the solver's own knobs. */
-type SolverChainMetadata = ChainMetadata & {
-    gasMultiplier?: number;
-};
-
-const customChainMetadata: ChainMap<SolverChainMetadata> = {
+const customChainMetadata: ChainMap<ChainMetadata> = {
     bsctestnet: {
         protocol: ProtocolType.Ethereum,
         chainId: 97,
@@ -43,9 +38,6 @@ const customChainMetadata: ChainMap<SolverChainMetadata> = {
                 family: ExplorerFamily.Etherscan,
             },
         ],
-        transactionOverrides: {
-            gasPrice: 3_000_000_000, // 3 gwei
-        },
     },
 
     sepolia: {
@@ -76,13 +68,13 @@ const customChainMetadata: ChainMap<SolverChainMetadata> = {
                 family: ExplorerFamily.Etherscan,
             },
         ],
-        // The node suggests a 0.001 gwei tip, while a saturated sepolia block pays ~1 gwei median — an
-        // estimate-based fee only gets in when there is spare room, and reveal has one block to make.
-        // Keep maxFeePerGas modest: the pool reserves gasLimit × maxFeePerGas per pending tx, so a high
-        // ceiling silently caps how many transactions the solver can have in flight.
+        // A third of sepolia blocks run full, and there the median tip paid is ~1 gwei while the node
+        // suggests 0.001 — reveal has one block to make, so the fee is pinned rather than estimated.
+        // maxFeePerGas stays modest on purpose: the pool reserves gasLimit × maxFeePerGas per pending
+        // tx, so a high ceiling quietly caps how many transactions the solver can have in flight.
         transactionOverrides: {
-            maxPriorityFeePerGas: 2_000_000_000, // 2 gwei
-            maxFeePerGas: 6_000_000_000, // 6 gwei — base fee sits near 1
+            maxPriorityFeePerGas: 1_000_000_000, // 2 gwei
+            maxFeePerGas: 3_000_000_000, // 6 gwei — base fee sits near 1
         },
     },
 
@@ -124,19 +116,10 @@ const chainMetadata = customChainMetadata
 
 z.record(z.string(), ChainMetadataSchema).parse(chainMetadata);
 
-function findChain(chainId: number | string) {
-    return Object.values(chainMetadata).find((c) => c.chainId.toString() === chainId.toString());
-}
-
-/** Fee multiplier configured for a chain, 1 when unset. */
-function getGasMultiplier(chainId: number | string): number {
-    return findChain(chainId)?.gasMultiplier ?? 1;
-}
-
-/** Fees pinned for a chain in `transactionOverrides` — they win over the multiplier. */
+/** `transactionOverrides` of a chain — gas settings every transaction on it is sent with. */
 function getFeeOverrides(chainId: number | string) {
-    const {gasPrice, maxFeePerGas, maxPriorityFeePerGas} = findChain(chainId)?.transactionOverrides ?? {};
-    return {gasPrice, maxFeePerGas, maxPriorityFeePerGas};
+    const chain = Object.values(chainMetadata).find((c) => c.chainId.toString() === chainId.toString());
+    return chain?.transactionOverrides ?? {};
 }
 
-export {chainMetadata, getGasMultiplier, getFeeOverrides};
+export {chainMetadata, getFeeOverrides};

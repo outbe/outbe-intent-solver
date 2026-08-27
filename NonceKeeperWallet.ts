@@ -6,14 +6,13 @@ import type {
   TransactionResponse,
 } from "@ethersproject/providers";
 import { Wallet } from "@ethersproject/wallet";
-import { BigNumber, type BigNumberish } from "@ethersproject/bignumber";
 import type { Wordlist } from "@ethersproject/wordlists";
 
 import { Logger } from "@ethersproject/logger";
 const ethersLogger = new Logger("NonceKeeperWallet");
 
 import { log } from "./logger.js";
-import { getGasMultiplier, getFeeOverrides } from "./config/chainMetadata.js";
+import { getFeeOverrides } from "./config/chainMetadata.js";
 
 const nonces: Record<number, Promise<number>> = {};
 // Track nonce at startup + how many tx-es this process issued, per chain.
@@ -65,43 +64,21 @@ export class NonceKeeperWallet extends Wallet {
   }
 
   /**
-   * Fees for the chain, from chainMetadata.ts: pinned `transactionOverrides` if it has them,
-   * otherwise the RPC estimate scaled by `gasMultiplier`.
+   * Gas settings pinned for the chain in chainMetadata.ts. Left to the RPC estimate when unset, and
+   * never overriding what the caller passed.
    */
-  private async applyGasMultiplier(
+  private async applyChainFees(
     transaction: Deferrable<TransactionRequest>,
   ): Promise<void> {
     if (transaction.gasPrice != null || transaction.maxFeePerGas != null) return;
-
-    const chainId = await this.getChainId();
-
-    const pinned = getFeeOverrides(chainId);
-    if (pinned.gasPrice != null || pinned.maxFeePerGas != null) {
-      Object.assign(transaction, pinned);
-      return;
-    }
-
-    const multiplier = getGasMultiplier(chainId);
-    if (!(multiplier > 1)) return;
-
-    const scale = (value: BigNumberish) =>
-      BigNumber.from(value).mul(Math.round(multiplier * 100)).div(100);
-
-    const {gasPrice, maxFeePerGas, maxPriorityFeePerGas} = await this.provider.getFeeData();
-
-    if (maxFeePerGas && maxPriorityFeePerGas) {
-      transaction.maxFeePerGas = scale(maxFeePerGas);
-      transaction.maxPriorityFeePerGas = scale(maxPriorityFeePerGas);
-    } else if (gasPrice) {
-      transaction.gasPrice = scale(gasPrice);
-    }
+    Object.assign(transaction, getFeeOverrides(await this.getChainId()));
   }
 
   async sendTransaction(
     transaction: Deferrable<TransactionRequest>,
     _retryCount = 0,
   ): Promise<TransactionResponse> {
-    await this.applyGasMultiplier(transaction);
+    await this.applyChainFees(transaction);
 
     try {
       // this check is necessary in order to not generate new nonces when a tx is going to fail
