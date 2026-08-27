@@ -43,5 +43,14 @@
     "rate": 1,
     "quoteTolerance": 0,
     "reversible": true
+  },
+  {
+    "originChain": "sepolia",
+    "destinationChain": "bsctestnet",
+    "inputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "outputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "rate": 1,
+    "quoteTolerance": 0,
+    "reversible": true
   }
 ]
