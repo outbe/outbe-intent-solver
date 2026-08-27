@@ -3,7 +3,7 @@
     "originChain": "outbetestnet",
     "destinationChain": "outbetestnet",
     "inputToken": "0x0000000000000000000000000000000000000000",
-    "outputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "outputToken": "0x0a521037Dd2d734D8265A80A7a97Caf5FC049694",
     "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
     "quoteTolerance": 0.01,
     "reversible": true
@@ -12,7 +12,7 @@
     "originChain": "outbetestnet",
     "destinationChain": "bsctestnet",
     "inputToken": "0x0000000000000000000000000000000000000000",
-    "outputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "outputToken": "0x0a521037Dd2d734D8265A80A7a97Caf5FC049694",
     "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
     "quoteTolerance": 0.01,
     "reversible": true
@@ -21,7 +21,7 @@
     "originChain": "outbetestnet",
     "destinationChain": "sepolia",
     "inputToken": "0x0000000000000000000000000000000000000000",
-    "outputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "outputToken": "0x0a521037Dd2d734D8265A80A7a97Caf5FC049694",
     "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
     "quoteTolerance": 0.01,
     "reversible": true
@@ -29,8 +29,8 @@
   {
     "originChain": "outbetestnet",
     "destinationChain": "bsctestnet",
-    "inputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
-    "outputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "inputToken": "0x0a521037Dd2d734D8265A80A7a97Caf5FC049694",
+    "outputToken": "0x0a521037Dd2d734D8265A80A7a97Caf5FC049694",
     "rate": 1,
     "quoteTolerance": 0,
     "reversible": true
@@ -38,8 +38,8 @@
   {
     "originChain": "outbetestnet",
     "destinationChain": "sepolia",
-    "inputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
-    "outputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "inputToken": "0x0a521037Dd2d734D8265A80A7a97Caf5FC049694",
+    "outputToken": "0x0a521037Dd2d734D8265A80A7a97Caf5FC049694",
     "rate": 1,
     "quoteTolerance": 0,
     "reversible": true
@@ -47,8 +47,8 @@
   {
     "originChain": "sepolia",
     "destinationChain": "bsctestnet",
-    "inputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
-    "outputToken": "0xe6AE7EBD5b5c34ed3E696e6Ced7f2A1660F20454",
+    "inputToken": "0x0a521037Dd2d734D8265A80A7a97Caf5FC049694",
+    "outputToken": "0x0a521037Dd2d734D8265A80A7a97Caf5FC049694",
     "rate": 1,
     "quoteTolerance": 0,
     "reversible": true
