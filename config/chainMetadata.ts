@@ -73,8 +73,11 @@ const customChainMetadata: ChainMap<ChainMetadata> = {
         // maxFeePerGas stays modest on purpose: the pool reserves gasLimit × maxFeePerGas per pending
         // tx, so a high ceiling quietly caps how many transactions the solver can have in flight.
         transactionOverrides: {
-            maxPriorityFeePerGas: 1_000_000_000, // 2 gwei
-            maxFeePerGas: 3_000_000_000, // 6 gwei — base fee sits near 1
+            maxPriorityFeePerGas: 1_000_000_000, // 1 gwei
+            maxFeePerGas: 3_000_000_000, // 3 gwei — base fee sits near 1
+            // Margin over the gas estimate: it is measured against current state, and a settle running
+            // a block later cost 9% more and burned its whole limit. Unused gas is not charged.
+            gasLimitMultiplier: 1.25,
         },
     },
 

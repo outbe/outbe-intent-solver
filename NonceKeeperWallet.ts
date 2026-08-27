@@ -63,26 +63,23 @@ export class NonceKeeperWallet extends Wallet {
     sentCount[chainId] = 0;
   }
 
-  /**
-   * Gas settings pinned for the chain in chainMetadata.ts. Left to the RPC estimate when unset, and
-   * never overriding what the caller passed.
-   */
-  private async applyChainFees(
-    transaction: Deferrable<TransactionRequest>,
-  ): Promise<void> {
-    if (transaction.gasPrice != null || transaction.maxFeePerGas != null) return;
-    Object.assign(transaction, getFeeOverrides(await this.getChainId()));
-  }
-
   async sendTransaction(
     transaction: Deferrable<TransactionRequest>,
     _retryCount = 0,
   ): Promise<TransactionResponse> {
-    await this.applyChainFees(transaction);
+    // Gas settings the chain pins in chainMetadata.ts; whatever the caller passed wins over them.
+    const {gasLimitMultiplier = 1, ...fees} = getFeeOverrides(await this.getChainId());
+    if (transaction.gasPrice == null && transaction.maxFeePerGas == null) {
+      Object.assign(transaction, fees);
+    }
 
     try {
       // this check is necessary in order to not generate new nonces when a tx is going to fail
-      await super.estimateGas(transaction);
+      const estimate = await super.estimateGas(transaction);
+
+      if (transaction.gasLimit == null) {
+        transaction.gasLimit = estimate.mul(Math.round(gasLimitMultiplier * 100)).div(100);
+      }
     } catch (error: any) {
       const message = extractErrorMessage(error);
       if (message.match(/nonce (is )?too low|nonce has already been used/i) && _retryCount < 3) {
