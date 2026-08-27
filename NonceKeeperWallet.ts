@@ -13,7 +13,7 @@ import { Logger } from "@ethersproject/logger";
 const ethersLogger = new Logger("NonceKeeperWallet");
 
 import { log } from "./logger.js";
-import { getGasMultiplier } from "./config/chainMetadata.js";
+import { getGasMultiplier, getFeeOverrides } from "./config/chainMetadata.js";
 
 const nonces: Record<number, Promise<number>> = {};
 // Track nonce at startup + how many tx-es this process issued, per chain.
@@ -65,14 +65,23 @@ export class NonceKeeperWallet extends Wallet {
   }
 
   /**
-   * Multiply the estimated fee by the chain's `gasMultiplier` from chainMetadata.ts.
+   * Fees for the chain, from chainMetadata.ts: pinned `transactionOverrides` if it has them,
+   * otherwise the RPC estimate scaled by `gasMultiplier`.
    */
   private async applyGasMultiplier(
     transaction: Deferrable<TransactionRequest>,
   ): Promise<void> {
     if (transaction.gasPrice != null || transaction.maxFeePerGas != null) return;
 
-    const multiplier = getGasMultiplier(await this.getChainId());
+    const chainId = await this.getChainId();
+
+    const pinned = getFeeOverrides(chainId);
+    if (pinned.gasPrice != null || pinned.maxFeePerGas != null) {
+      Object.assign(transaction, pinned);
+      return;
+    }
+
+    const multiplier = getGasMultiplier(chainId);
     if (!(multiplier > 1)) return;
 
     const scale = (value: BigNumberish) =>

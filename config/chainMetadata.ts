@@ -76,7 +76,14 @@ const customChainMetadata: ChainMap<SolverChainMetadata> = {
                 family: ExplorerFamily.Etherscan,
             },
         ],
-        gasMultiplier: 2,
+        // The node suggests a 0.001 gwei tip, while a saturated sepolia block pays ~1 gwei median — an
+        // estimate-based fee only gets in when there is spare room, and reveal has one block to make.
+        // Keep maxFeePerGas modest: the pool reserves gasLimit × maxFeePerGas per pending tx, so a high
+        // ceiling silently caps how many transactions the solver can have in flight.
+        transactionOverrides: {
+            maxPriorityFeePerGas: 2_000_000_000, // 2 gwei
+            maxFeePerGas: 6_000_000_000, // 6 gwei — base fee sits near 1
+        },
     },
 
     outbetestnet: {
@@ -117,10 +124,19 @@ const chainMetadata = customChainMetadata
 
 z.record(z.string(), ChainMetadataSchema).parse(chainMetadata);
 
-/** Fee multiplier configured for a chain, 1 when unset. */
-function getGasMultiplier(chainId: number | string): number {
-    const chain = Object.values(chainMetadata).find((c) => c.chainId.toString() === chainId.toString());
-    return chain?.gasMultiplier ?? 1;
+function findChain(chainId: number | string) {
+    return Object.values(chainMetadata).find((c) => c.chainId.toString() === chainId.toString());
 }
 
-export {chainMetadata, getGasMultiplier};
+/** Fee multiplier configured for a chain, 1 when unset. */
+function getGasMultiplier(chainId: number | string): number {
+    return findChain(chainId)?.gasMultiplier ?? 1;
+}
+
+/** Fees pinned for a chain in `transactionOverrides` — they win over the multiplier. */
+function getFeeOverrides(chainId: number | string) {
+    const {gasPrice, maxFeePerGas, maxPriorityFeePerGas} = findChain(chainId)?.transactionOverrides ?? {};
+    return {gasPrice, maxFeePerGas, maxPriorityFeePerGas};
+}
+
+export {chainMetadata, getGasMultiplier, getFeeOverrides};
