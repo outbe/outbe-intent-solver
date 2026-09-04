@@ -34,7 +34,7 @@ export async function getTokenDecimals(
   chainName: string,
   multiProvider: any,
 ): Promise<number> {
-  // Native token (address zero) — read from chain metadata (COEN=6, BNB=18, …)
+  // Native token (address zero) - read from chain metadata (COEN=18, BNB=18, ...)
   if (tokenAddress === "0x0000000000000000000000000000000000000000") {
     return multiProvider.getChainMetadata(chainName).nativeToken?.decimals ?? 18;
   }
