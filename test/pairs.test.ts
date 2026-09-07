@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {configurePairs, expandPairs, type TradingPair} from "../config/tradingPairs/pairs";
+import {expandPairs, type TradingPair} from "../config/tradingPairs/pairs";
 
 const ORACLE = "0xBASE/0xQUOTE";
 
@@ -31,40 +31,5 @@ describe("expandPairs", () => {
         expect(expandPairs([pair({rate: 4, reversible: true})])[1].rate).toBe(0.25);
         expect(expandPairs([pair({reversible: true})])[1].rate).toBe(`1/${ORACLE}`);
         expect(expandPairs([pair({rate: `1/${ORACLE}`, reversible: true})])[1].rate).toBe(ORACLE);
-    });
-});
-
-describe("configurePairs", () => {
-    it("maps chain names and token addresses without replacing native tokens", () => {
-        const [configured] = configurePairs([pair()], {
-            chainNames: {
-                outbetestnet: "outbemainnet",
-                sepolia: "ethereum",
-            },
-            tokenAddresses: {
-                outbemainnet: "0xOUTBE",
-                ethereum: "0xETHEREUM",
-            },
-        });
-
-        expect(configured.originChain).toBe("outbemainnet");
-        expect(configured.destinationChain).toBe("ethereum");
-        expect(configured.inputToken).toBe("0xOUTBE");
-        expect(configured.outputToken).toBe("0xETHEREUM");
-
-        const [native] = configurePairs([pair({inputToken: "0x0000000000000000000000000000000000000000"})], {
-            chainNames: {outbetestnet: "outbemainnet", sepolia: "ethereum"},
-            tokenAddresses: {outbemainnet: "0xOUTBE", ethereum: "0xETHEREUM"},
-        });
-        expect(native.inputToken).toBe("0x0000000000000000000000000000000000000000");
-    });
-
-    it("keeps the committed token when an optional override is empty", () => {
-        const [configured] = configurePairs([pair()], {
-            chainNames: {},
-            tokenAddresses: {sepolia: ""},
-        });
-
-        expect(configured.outputToken).toBe("0xU0");
     });
 });

@@ -2,13 +2,14 @@ import {BigNumber, ethers} from "ethers";
 import {readFileSync, existsSync} from "fs";
 import {resolve, dirname} from "path";
 import {fileURLToPath} from "url";
-import {chainMetadata, chainRoles, deploymentEnvironment} from "../chainMetadata.js";
-import {configurePairs, expandPairs, type RateSource, type TradingPair} from "./pairs.js";
+import {chainMetadata, network, outbeChain} from "../chainMetadata.js";
+import {expandPairs, type RateSource, type TradingPair} from "./pairs.js";
 import IOracleAbi from "../../solvers/contracts/IOracle.json" with {type: "json"};
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PAIRS_FILE = resolve(__dirname, "pairs.json");
-const OUTBE_RPC = chainMetadata[chainRoles.outbe].rpcUrls[0].http;
+const PAIRS_TEMPLATE = resolve(__dirname, `pairs.${network}.json`);
+const OUTBE_RPC = chainMetadata[outbeChain].rpcUrls[0].http;
 const ORACLE_ADDRESS = process.env.ORACLE_ADDRESS || "0x000000000000000000000000000000000000EE05";
 const ORACLE_DECIMALS = 6;
 
@@ -36,32 +37,23 @@ function loadPairsConfig(): TradingPair[] {
     if (!existsSync(PAIRS_FILE)) {
         throw new Error(
             `Trading pairs config not found: ${PAIRS_FILE}\n` +
-            `Run "yarn pairs:init" to create it from the example.`
+            `Run "yarn pairs:init" to create it from pairs.${network}.json.`
         );
     }
     const pairs: TradingPair[] = JSON.parse(readFileSync(PAIRS_FILE, "utf-8"));
-    const tokenAddresses = {
-        [chainRoles.outbe]: process.env.OUTBE_USDT_TOKEN,
-        [chainRoles.bsc]: process.env.BSC_USDT_TOKEN,
-        [chainRoles.ethereum]: process.env.ETHEREUM_USDT_TOKEN,
-    };
 
-    if (deploymentEnvironment === "mainnet") {
-        for (const [chain, address] of Object.entries(tokenAddresses)) {
-            if (!address || !ethers.utils.isAddress(address)) {
-                throw new Error(`USDT token address is required for ${chain}`);
-            }
-        }
+    // pairs.json is the working copy and does not follow NETWORK — catch the leftovers of another
+    // network here rather than letting every intent quietly fail to match a pair.
+    const unknown = [...new Set(pairs.flatMap((pair) => [pair.originChain, pair.destinationChain]))]
+        .filter((chain) => !(chain in chainMetadata));
+    if (unknown.length) {
+        throw new Error(
+            `${PAIRS_FILE} trades on ${unknown.join(", ")}, which ${network} does not have.\n` +
+            `Run "yarn pairs:init" to recreate it from pairs.${network}.json.`
+        );
     }
 
-    return configurePairs(pairs, {
-        chainNames: {
-            outbetestnet: chainRoles.outbe,
-            bsctestnet: chainRoles.bsc,
-            sepolia: chainRoles.ethereum,
-        },
-        tokenAddresses,
-    });
+    return pairs;
 }
 
 async function getUrlRate(url: string): Promise<number> {
@@ -134,4 +126,4 @@ export async function getOracleRates(): Promise<{base: string; quote: string; ra
     );
 }
 
-export {loadPairsConfig, getOracleRate, resolveRate, PAIRS_FILE};
+export {loadPairsConfig, getOracleRate, resolveRate, PAIRS_FILE, PAIRS_TEMPLATE};

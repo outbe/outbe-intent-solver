@@ -1,17 +1,12 @@
 import {readFileSync, writeFileSync, existsSync, copyFileSync} from "fs";
-import {resolve, dirname} from "path";
-import {fileURLToPath} from "url";
+import {basename} from "path";
 import {input, select, confirm} from "@inquirer/prompts";
-import {getOracleRates, resolveRate} from "../config/tradingPairs/handler.js";
+import {getOracleRates, loadPairsConfig, resolveRate, PAIRS_FILE, PAIRS_TEMPLATE} from "../config/tradingPairs/handler.js";
 import type {TradingPair} from "../config/tradingPairs/pairs.js";
 import {chainMetadata} from "../config/chainMetadata.js";
 
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const chainChoices = Object.keys(chainMetadata).map((name) => ({name, value: name}));
-const PAIRS_DIR = resolve(__dirname, "../config/tradingPairs");
-const PAIRS_FILE = resolve(PAIRS_DIR, "pairs.json");
-const EXAMPLE_FILE = resolve(PAIRS_DIR, "pairs.example.json");
 
 function loadPairs(): TradingPair[] {
     if (!existsSync(PAIRS_FILE)) return [];
@@ -31,8 +26,8 @@ function formatPair(pair: TradingPair, index: number): string {
 // --- Commands ---
 
 async function init() {
-    if (!existsSync(EXAMPLE_FILE)) {
-        console.error("Example file not found:", EXAMPLE_FILE);
+    if (!existsSync(PAIRS_TEMPLATE)) {
+        console.error("Template not found:", PAIRS_TEMPLATE);
         process.exit(1);
     }
 
@@ -47,8 +42,8 @@ async function init() {
         }
     }
 
-    copyFileSync(EXAMPLE_FILE, PAIRS_FILE);
-    console.log("Created pairs.json from example.");
+    copyFileSync(PAIRS_TEMPLATE, PAIRS_FILE);
+    console.log(`Created pairs.json from ${basename(PAIRS_TEMPLATE)}.`);
 }
 
 async function add() {
@@ -99,7 +94,7 @@ async function remove() {
 }
 
 async function list() {
-    const pairs = loadPairs();
+    const pairs = loadPairsConfig(); // validates the file against the active network
     if (pairs.length === 0) {
         console.log("No pairs configured.");
         return;
@@ -128,25 +123,17 @@ async function oracle() {
 
 // --- Entry ---
 
-const command = process.argv[2];
+const commands = {init, add, remove, list, oracle};
+const command = process.argv[2] as keyof typeof commands;
 
-switch (command) {
-    case "init":
-        await init();
-        break;
-    case "add":
-        await add();
-        break;
-    case "remove":
-        await remove();
-        break;
-    case "list":
-        await list();
-        break;
-    case "oracle":
-        await oracle();
-        break;
-    default:
-        console.log("Usage: tsx scripts/pairs.ts <init|add|remove|list|oracle>");
-        process.exit(1);
+if (!commands[command]) {
+    console.log(`Usage: tsx scripts/pairs.ts <${Object.keys(commands).join("|")}>`);
+    process.exit(1);
+}
+
+try {
+    await commands[command]();
+} catch (error: any) {
+    console.error("Error:", error.message);
+    process.exit(1);
 }
