@@ -138,39 +138,25 @@ ROUTER_CONTRACT=0x3448f63B27161cEE72781319e6b579132d905d08
 
 # Optional: Log level (debug, info, warn, error)
 LOG_LEVEL=info
+
+# Select testnet (Outbe/BSC Testnet/Sepolia) or mainnet (Outbe/BSC/Ethereum)
+DEPLOYMENT_ENVIRONMENT=testnet
 ```
 
 **Important**:
 - `PRIVATE_KEY` is **required** - the solver wallet must have sufficient funds on all chains where it will operate
-- `ROUTER_CONTRACT` address is used for all chains (Outbe, BSC testnet, etc.)
+- `ROUTER_CONTRACT` address is used for all chains in the selected profile
+- Mainnet requires `OUTBE_RPC_URL`, `BSC_RPC_URL`, `ETHEREUM_RPC_URL` and the corresponding
+  `OUTBE_USDT_TOKEN`, `BSC_USDT_TOKEN`, `ETHEREUM_USDT_TOKEN` addresses
 - `LOG_LEVEL` defaults to `info` if not specified
 
 ### Chain Configuration
 
-Configure RPC endpoints and chain settings in `config/chainMetadata.ts`:
+Select the profile with `DEPLOYMENT_ENVIRONMENT` and pass private RPC endpoints through the
+environment. `config/chainMetadata.ts` provides the public metadata and safe testnet fallbacks.
 
-```typescript
-import { ChainMetadata } from '@hyperlane-xyz/sdk';
-
-export const chainMetadata: Record<string, ChainMetadata> = {
-  outbe_dev: {
-    name: 'outbe_dev',
-    displayName: 'Outbe Devnet',
-    chainId: 64165,
-    rpcUrls: [{ http: 'https://eth.d.outbe.net' }],
-    nativeToken: { name: 'COEN', symbol: 'COEN', decimals: 18 },
-  },
-  bsctestnet: {
-    name: 'bsctestnet',
-    displayName: 'BSC Testnet',
-    chainId: 97,
-    rpcUrls: [{ http: 'https://data-seed-prebsc-1-s1.binance.org:8545' }],
-    nativeToken: { name: 'BNB', symbol: 'BNB', decimals: 18 },
-  },
-};
-```
-
-The solver automatically connects to all chains configured in `chainMetadata.ts` using the specified RPC endpoints.
+The solver connects to all three chains in the selected profile and applies token-address overrides to
+the committed trading-pair template at startup.
 
 ### Trading Pairs Configuration
 

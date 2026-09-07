@@ -2,13 +2,13 @@ import {BigNumber, ethers} from "ethers";
 import {readFileSync, existsSync} from "fs";
 import {resolve, dirname} from "path";
 import {fileURLToPath} from "url";
-import {chainMetadata} from "../chainMetadata.js";
-import {expandPairs, type RateSource, type TradingPair} from "./pairs.js";
+import {chainMetadata, chainRoles, deploymentEnvironment} from "../chainMetadata.js";
+import {configurePairs, expandPairs, type RateSource, type TradingPair} from "./pairs.js";
 import IOracleAbi from "../../solvers/contracts/IOracle.json" with {type: "json"};
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PAIRS_FILE = resolve(__dirname, "pairs.json");
-const OUTBE_RPC = chainMetadata.outbetestnet.rpcUrls[0].http;
+const OUTBE_RPC = chainMetadata[chainRoles.outbe].rpcUrls[0].http;
 const ORACLE_ADDRESS = process.env.ORACLE_ADDRESS || "0x000000000000000000000000000000000000EE05";
 const ORACLE_DECIMALS = 6;
 
@@ -39,7 +39,29 @@ function loadPairsConfig(): TradingPair[] {
             `Run "yarn pairs:init" to create it from the example.`
         );
     }
-    return JSON.parse(readFileSync(PAIRS_FILE, "utf-8"));
+    const pairs: TradingPair[] = JSON.parse(readFileSync(PAIRS_FILE, "utf-8"));
+    const tokenAddresses = {
+        [chainRoles.outbe]: process.env.OUTBE_USDT_TOKEN,
+        [chainRoles.bsc]: process.env.BSC_USDT_TOKEN,
+        [chainRoles.ethereum]: process.env.ETHEREUM_USDT_TOKEN,
+    };
+
+    if (deploymentEnvironment === "mainnet") {
+        for (const [chain, address] of Object.entries(tokenAddresses)) {
+            if (!address || !ethers.utils.isAddress(address)) {
+                throw new Error(`USDT token address is required for ${chain}`);
+            }
+        }
+    }
+
+    return configurePairs(pairs, {
+        chainNames: {
+            outbetestnet: chainRoles.outbe,
+            bsctestnet: chainRoles.bsc,
+            sepolia: chainRoles.ethereum,
+        },
+        tokenAddresses,
+    });
 }
 
 async function getUrlRate(url: string): Promise<number> {
