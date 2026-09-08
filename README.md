@@ -23,13 +23,15 @@ solver/
 ├── config/
 │  ├── index.ts
 │  ├── allowBlockLists.ts
-│  ├── chainMetadata.ts
+│  ├── chainMetadata.ts       # Picks a profile from config/chains/
+│  ├── chains/
 │  ├── types.ts
 │  └── tradingPairs/
 │      ├── handler.ts
 │      ├── pairs.ts            # Pair type + reversible expansion
 │      ├── pairs.json          # Working config (gitignored)
-│      └── pairs.example.json  # Example config (committed)
+│      ├── pairs.testnet.json  # Template per environment (committed)
+│      └── pairs.mainnet.json
 └── solvers/
     ├── index.ts
     ├── BaseFiller.ts
@@ -65,7 +67,7 @@ solver/
         - **handler.ts**: Loads pairs from JSON, resolves oracle/URL exchange rates.
         - **pairs.ts**: Trading pair type, expands `reversible` pairs into both directions.
         - **pairs.json**: Working pairs config (gitignored, created via `yarn pairs:init`).
-        - **pairs.example.json**: Example pairs config (committed to git).
+        - **pairs.testnet.json** / **pairs.mainnet.json**: Templates, one per deployment.
 - **scripts/solver-escrow/**: CLI for solver collateral — `balance.ts`, `deposit.ts`, `withdraw.ts`, plus
   `common.ts` (provider/wallet, escrow lookup via `router.SOLVER_ESCROW()`, token decimals & symbol).
 - **solvers/**: Contains implementations of different solvers and common utilities.
@@ -138,46 +140,34 @@ ROUTER_CONTRACT=0x3448f63B27161cEE72781319e6b579132d905d08
 
 # Optional: Log level (debug, info, warn, error)
 LOG_LEVEL=info
+
+# Select testnet (Outbe/BSC Testnet/Sepolia) or mainnet (Outbe/Ethereum)
+NETWORK=testnet
 ```
 
 **Important**:
 - `PRIVATE_KEY` is **required** - the solver wallet must have sufficient funds on all chains where it will operate
-- `ROUTER_CONTRACT` address is used for all chains (Outbe, BSC testnet, etc.)
+- `ROUTER_CONTRACT` address is used for all chains in the selected profile
 - `LOG_LEVEL` defaults to `info` if not specified
 
 ### Chain Configuration
 
-Configure RPC endpoints and chain settings in `config/chainMetadata.ts`:
+`NETWORK` (`testnet` by default) picks one of two profiles, each a plain literal you can read end to end:
 
-```typescript
-import { ChainMetadata } from '@hyperlane-xyz/sdk';
+- `config/chains/testnet.ts` — Outbe Testnet, BSC Testnet, Sepolia
+- `config/chains/mainnet.ts` — Outbe Mainnet, Ethereum
 
-export const chainMetadata: Record<string, ChainMetadata> = {
-  outbe_dev: {
-    name: 'outbe_dev',
-    displayName: 'Outbe Devnet',
-    chainId: 64165,
-    rpcUrls: [{ http: 'https://eth.d.outbe.net' }],
-    nativeToken: { name: 'COEN', symbol: 'COEN', decimals: 18 },
-  },
-  bsctestnet: {
-    name: 'bsctestnet',
-    displayName: 'BSC Testnet',
-    chainId: 97,
-    rpcUrls: [{ http: 'https://data-seed-prebsc-1-s1.binance.org:8545' }],
-    nativeToken: { name: 'BNB', symbol: 'BNB', decimals: 18 },
-  },
-};
-```
-
-The solver automatically connects to all chains configured in `chainMetadata.ts` using the specified RPC endpoints.
+`config/chainMetadata.ts` only chooses between them. To change an RPC, an explorer or the gas settings
+of a chain, edit its entry in the profile — nothing is assembled from environment variables.
 
 ### Trading Pairs Configuration
 
-Trading pairs are stored in `config/tradingPairs/pairs.json` . Manage them via CLI commands:
+Trading pairs live in `config/tradingPairs/pairs.json` (gitignored), created by `yarn pairs:init` from
+the template of the active network — `pairs.testnet.json` or `pairs.mainnet.json`. Manage them via
+CLI commands:
 
 ```sh
-yarn pairs:init      # Create pairs.json from example
+yarn pairs:init      # Create pairs.json from the environment's template
 yarn pairs:list      # Show configured pairs
 yarn pairs:add       # Add a pair interactively
 yarn pairs:remove    # Remove a pair interactively

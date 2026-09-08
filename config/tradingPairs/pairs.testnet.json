@@ -1,0 +1,110 @@
+[
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "outbetestnet",
+    "inputToken": "0x0000000000000000000000000000000000000000",
+    "outputToken": "0x07E6524B848790a4DE49680b4bc41f664277bacD",
+    "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
+    "quoteTolerance": 0.01,
+    "reversible": true
+  },
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "bsctestnet",
+    "inputToken": "0x0000000000000000000000000000000000000000",
+    "outputToken": "0x07E6524B848790a4DE49680b4bc41f664277bacD",
+    "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
+    "quoteTolerance": 0.01,
+    "reversible": true
+  },
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "sepolia",
+    "inputToken": "0x0000000000000000000000000000000000000000",
+    "outputToken": "0x07E6524B848790a4DE49680b4bc41f664277bacD",
+    "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
+    "quoteTolerance": 0.01,
+    "reversible": true
+  },
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "bsctestnet",
+    "inputToken": "0x07E6524B848790a4DE49680b4bc41f664277bacD",
+    "outputToken": "0x07E6524B848790a4DE49680b4bc41f664277bacD",
+    "rate": 1,
+    "quoteTolerance": 0,
+    "reversible": true
+  },
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "sepolia",
+    "inputToken": "0x07E6524B848790a4DE49680b4bc41f664277bacD",
+    "outputToken": "0x07E6524B848790a4DE49680b4bc41f664277bacD",
+    "rate": 1,
+    "quoteTolerance": 0,
+    "reversible": true
+  },
+  {
+    "originChain": "sepolia",
+    "destinationChain": "bsctestnet",
+    "inputToken": "0x07E6524B848790a4DE49680b4bc41f664277bacD",
+    "outputToken": "0x07E6524B848790a4DE49680b4bc41f664277bacD",
+    "rate": 1,
+    "quoteTolerance": 0,
+    "reversible": true
+  },
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "outbetestnet",
+    "inputToken": "0x0000000000000000000000000000000000000000",
+    "outputToken": "0x0347527111934F229A9b501e26BCC5189d55cB9f",
+    "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
+    "quoteTolerance": 0.01,
+    "reversible": true
+  },
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "bsctestnet",
+    "inputToken": "0x0000000000000000000000000000000000000000",
+    "outputToken": "0x0347527111934F229A9b501e26BCC5189d55cB9f",
+    "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
+    "quoteTolerance": 0.01,
+    "reversible": true
+  },
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "sepolia",
+    "inputToken": "0x0000000000000000000000000000000000000000",
+    "outputToken": "0x0347527111934F229A9b501e26BCC5189d55cB9f",
+    "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
+    "quoteTolerance": 0.01,
+    "reversible": true
+  },
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "bsctestnet",
+    "inputToken": "0x0347527111934F229A9b501e26BCC5189d55cB9f",
+    "outputToken": "0x0347527111934F229A9b501e26BCC5189d55cB9f",
+    "rate": 1,
+    "quoteTolerance": 0,
+    "reversible": true
+  },
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "sepolia",
+    "inputToken": "0x0347527111934F229A9b501e26BCC5189d55cB9f",
+    "outputToken": "0x0347527111934F229A9b501e26BCC5189d55cB9f",
+    "rate": 1,
+    "quoteTolerance": 0,
+    "reversible": true
+  },
+  {
+    "originChain": "sepolia",
+    "destinationChain": "bsctestnet",
+    "inputToken": "0x0347527111934F229A9b501e26BCC5189d55cB9f",
+    "outputToken": "0x0347527111934F229A9b501e26BCC5189d55cB9f",
+    "rate": 1,
+    "quoteTolerance": 0,
+    "reversible": true
+  }
+]
