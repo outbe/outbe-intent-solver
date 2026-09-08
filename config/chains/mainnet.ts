@@ -4,21 +4,15 @@ import {ProtocolType} from "@hyperlane-xyz/utils";
 const chains: ChainMap<ChainMetadata> = {
     outbemainnet: {
         protocol: ProtocolType.Ethereum,
-        chainId: 676,
-        domainId: 676,
+        chainId: 70860602,
+        domainId: 70860602,
         name: "outbemainnet",
         displayName: "Outbe Mainnet",
         nativeToken: {name: "Rudis", symbol: "RUDIS", decimals: 18},
-        // TODO: confirm before launch — outbe mainnet is not live yet, this mirrors the testnet host
+        // Plain http, no domain yet — replace with the TLS endpoint once one exists
         rpcUrls: [{
-            http: "https://rpc.outbe.net",
+            http: "http://125.253.90.171",
             pagination: {maxBlockRange: 1999, minBlockNumber: 1},
-        }],
-        blockExplorers: [{
-            name: "OutbeScout",
-            url: "https://scout.outbe.net/",
-            apiUrl: "https://scout.outbe.net/api/v2.",
-            family: ExplorerFamily.Blockscout,
         }],
     },
 
@@ -30,8 +24,11 @@ const chains: ChainMap<ChainMetadata> = {
         displayName: "Ethereum",
         nativeToken: {name: "Ether", symbol: "ETH", decimals: 18},
         rpcUrls: [
+            {
+                http: "https://methodical-stylish-dream.ethereum-mainnet.quiknode.pro/f07cd6ae9a2860b6530bc394ba7466235307f94a/",
+                pagination: {maxBlockRange: 1000},
+            },
             {http: "https://ethereum-rpc.publicnode.com", pagination: {maxBlockRange: 1000}},
-            {http: "https://eth.llamarpc.com", pagination: {maxBlockRange: 1000}},
         ],
         blockExplorers: [{
             name: "Etherscan",
