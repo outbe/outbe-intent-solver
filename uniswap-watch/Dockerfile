@@ -23,5 +23,4 @@ WORKDIR /workspace/uniswap-watch
 
 CMD ["pm2-runtime", "start", "index.ts", "--name", "uniswap-watch", "--interpreter", "tsx", \
      "--output", "/workspace/logs/uniswap-watch-out.log", \
-     "--error", "/workspace/logs/uniswap-watch-error.log", \
-     "--merge-logs"]
+     "--error", "/workspace/logs/uniswap-watch-error.log"]
