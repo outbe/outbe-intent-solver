@@ -21,7 +21,8 @@
     "escrow:balance": "tsx scripts/solver-escrow/balance.ts",
     "escrow:deposit": "tsx scripts/solver-escrow/deposit.ts",
     "escrow:withdraw": "tsx scripts/solver-escrow/withdraw.ts",
-    "pairs:rate": "tsx scripts/test-oracle.ts"
+    "pairs:rate": "tsx scripts/test-oracle.ts",
+    "uni:watch": "cd uniswap-watch && tsx index.ts"
   },
   "devDependencies": {
     "@typechain/ethers-v5": "^11.1.2",
