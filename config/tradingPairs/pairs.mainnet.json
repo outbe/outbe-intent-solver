@@ -7,5 +7,23 @@
     "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
     "quoteTolerance": 0.01,
     "reversible": true
+  },
+  {
+    "originChain": "outbemainnet",
+    "destinationChain": "ethereum",
+    "inputToken": "0x0000000000000000000000000000000000000000",
+    "outputToken": "0x5Dd5245b8D00341Bb6aaA222107999d788faaF61",
+    "rate": 1,
+    "quoteTolerance": 0,
+    "reversible": true
+  },
+  {
+    "originChain": "ethereum",
+    "destinationChain": "ethereum",
+    "inputToken": "0x5Dd5245b8D00341Bb6aaA222107999d788faaF61",
+    "outputToken": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    "rate": "0x0000000000000000000000000000000000000000/0x00000000000000000000000000000000000CC840",
+    "quoteTolerance": 0.01,
+    "reversible": true
   }
 ]

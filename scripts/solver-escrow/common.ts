@@ -105,10 +105,14 @@ export function promptChain(): Promise<string> {
 
 /** Pick one of the tokens pairs.json trades on that chain, or type any address. */
 export async function promptToken(chainName: string): Promise<string> {
-    const choices = tokensFromPairs(chainName).map((token) => ({
-        name: isNative(token) ? `native (${chainOrExit(chainName).nativeToken!.symbol})` : token,
-        value: token,
-    }));
+    const provider = getProvider(chainName);
+    const choices = await Promise.all(
+        tokensFromPairs(chainName).map(async (token) => {
+            // Symbols come off the chain, so a wrong address in pairs.json shows up here as "?"
+            const {symbol} = await tokenInfo(token, chainName, provider).catch(() => ({symbol: "?"}));
+            return {name: `${symbol}${isNative(token) ? " (native)" : ` — ${token}`}`, value: token};
+        }),
+    );
 
     const picked = await select({
         message: "Token:",
