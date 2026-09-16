@@ -1,4 +1,5 @@
-// Watches Swap events of one pool and posts each swap to Telegram + writes it to swaps.db (SQLite).
+// Watches Swap events of one pool, writes each swap to swaps.db (SQLite) and sends it to every
+// Telegram chat that /start-ed the bot (subscribers live in the same DB, /stop removes them).
 // Supported: Uniswap V2 / V3, Trader Joe Liquidity Book (UNI_POOL = pair address),
 //            Uniswap V4 (UNI_POOL = 32-byte PoolId, events come from the PoolManager singleton).
 // Usage: cp .env.example .env, fill it, then `yarn uni:watch` from repo root (or `npx tsx index.ts` here).
@@ -6,8 +7,8 @@ import "dotenv-flow/config";
 import {ethers} from "ethers";
 import {DatabaseSync} from "node:sqlite";
 
-const {UNI_RPC, UNI_POOL, TG_TOKEN, TG_CHAT} = process.env;
-if (!UNI_RPC || !UNI_POOL || !TG_TOKEN || !TG_CHAT) throw new Error("need UNI_RPC, UNI_POOL, TG_TOKEN, TG_CHAT");
+const {UNI_RPC, UNI_POOL, TG_TOKEN} = process.env;
+if (!UNI_RPC || !UNI_POOL || !TG_TOKEN) throw new Error("need UNI_RPC, UNI_POOL, TG_TOKEN");
 // V4 singletons; same address on mainnet/base/arbitrum/op/polygon. Override for other chains.
 const POOL_MANAGER = process.env.UNI_POOL_MANAGER ?? "0x000000000004444c5dc75cB358380D2e3dE08A90";
 const POSITION_MANAGER = process.env.UNI_POSITION_MANAGER ?? "0xbd216513d74c8cf14cf4747e6aaa6420ff64ee9e";
@@ -67,13 +68,45 @@ db.exec(`create table if not exists swaps (
     "from" text, "to" text, sold_amount text, sold_token text, bought_amount text, bought_token text, bin integer
 )`);
 const insert = db.prepare(`insert or ignore into swaps values (?,?,?,?,?,?,?,?,?,?,?,?)`);
+db.exec(`create table if not exists subscribers (chat_id integer primary key)`);
+const subs = {
+    add: db.prepare("insert or ignore into subscribers values (?)"),
+    del: db.prepare("delete from subscribers where chat_id = ?"),
+    all: db.prepare("select chat_id from subscribers"),
+};
 
-const tg = (text: string) =>
-    fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+// --- Telegram: anyone who sends /start to the bot gets every swap, /stop unsubscribes.
+const api = (method: string, body: object) =>
+    fetch(`https://api.telegram.org/bot${TG_TOKEN}/${method}`, {
         method: "POST",
         headers: {"content-type": "application/json"},
-        body: JSON.stringify({chat_id: TG_CHAT, text, disable_web_page_preview: true}),
-    }).then((r) => (r.ok ? undefined : r.text().then((e) => console.error("tg:", e))));
+        body: JSON.stringify(body),
+    }).then((r) => r.json() as Promise<{ok: boolean; error_code?: number; description?: string; result?: any}>);
+
+async function send(chat_id: number, text: string) {
+    const r = await api("sendMessage", {chat_id, text, disable_web_page_preview: true});
+    if (!r.ok) console.error("tg:", chat_id, r.description);
+    if (r.error_code === 403) subs.del.run(chat_id); // user blocked the bot
+}
+// ponytail: sequential sends, ~30 msg/s Telegram cap; batch/queue if subscribers grow into hundreds
+const broadcast = async (text: string) => {
+    for (const {chat_id} of subs.all.all() as {chat_id: number}[]) await send(chat_id, text);
+};
+
+async function pollCommands() {
+    let offset = 0;
+    for (;;) {
+        const r = await api("getUpdates", {offset, timeout: 30, allowed_updates: ["message"]}).catch(() => null);
+        if (!r?.ok) { await new Promise((res) => setTimeout(res, 5000)); continue; }
+        for (const u of r.result) {
+            offset = u.update_id + 1;
+            const chat = u.message?.chat?.id, text: string = u.message?.text ?? "";
+            if (!chat) continue;
+            if (text.startsWith("/start")) { subs.add.run(chat); await send(chat, `Subscribed to swaps of ${sym0}/${sym1} on ${name}. Send /stop to unsubscribe.`); }
+            else if (text.startsWith("/stop")) { subs.del.run(chat); await send(chat, "Unsubscribed."); }
+        }
+    }
+}
 
 function pick(in0: ethers.BigNumber, in1: ethers.BigNumber, out0: ethers.BigNumber, out1: ethers.BigNumber) {
     const zeroForOne = !in0.isZero();
@@ -113,11 +146,12 @@ async function onSwap(ev: ethers.Event) {
         `tx: ${ev.transactionHash}`,
     ].join("\n");
     console.log(msg);
-    await tg(msg);
+    await broadcast(msg);
 }
 
 if (isV4) pool.on(pool.filters["Swap(bytes32,address,int128,int128,uint160,uint128,int24,uint24)"](UNI_POOL), (...args) => onSwap(args.at(-1)));
 else
     for (const sig of Object.keys(pool.filters).filter((s) => s.startsWith("Swap(") && !s.startsWith("Swap(bytes32")))
         pool.on(pool.filters[sig](), (...args) => onSwap(args.at(-1)));
-console.log(`watching ${sym0}/${sym1} at ${UNI_POOL} on ${name} (#${chainId})`);
+pollCommands();
+console.log(`watching ${sym0}/${sym1} at ${UNI_POOL} on ${name} (#${chainId}); ${subs.all.all().length} subscribers`);
