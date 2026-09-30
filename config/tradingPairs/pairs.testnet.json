@@ -88,5 +88,50 @@
     "rate": 1,
     "quoteTolerance": 0,
     "reversible": true
+  },
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "outbetestnet",
+    "inputToken": "0x9Bc9C13aA06f4D7cDEbe987f07551B26352Cb3D7",
+    "outputToken": "0x4a37283C15dFdF80C91C4CA9074BD81AE50E0021",
+    "rate": 1,
+    "quoteTolerance": 0,
+    "reversible": true
+  },
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "bsctestnet",
+    "inputToken": "0x9Bc9C13aA06f4D7cDEbe987f07551B26352Cb3D7",
+    "outputToken": "0x4a37283C15dFdF80C91C4CA9074BD81AE50E0021",
+    "rate": 1,
+    "quoteTolerance": 0,
+    "reversible": true
+  },
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "bsctestnet",
+    "inputToken": "0x4a37283C15dFdF80C91C4CA9074BD81AE50E0021",
+    "outputToken": "0x9Bc9C13aA06f4D7cDEbe987f07551B26352Cb3D7",
+    "rate": 1,
+    "quoteTolerance": 0,
+    "reversible": true
+  },
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "sepolia",
+    "inputToken": "0x9Bc9C13aA06f4D7cDEbe987f07551B26352Cb3D7",
+    "outputToken": "0x4a37283C15dFdF80C91C4CA9074BD81AE50E0021",
+    "rate": 1,
+    "quoteTolerance": 0,
+    "reversible": true
+  },
+  {
+    "originChain": "outbetestnet",
+    "destinationChain": "sepolia",
+    "inputToken": "0x4a37283C15dFdF80C91C4CA9074BD81AE50E0021",
+    "outputToken": "0x9Bc9C13aA06f4D7cDEbe987f07551B26352Cb3D7",
+    "rate": 1,
+    "quoteTolerance": 0,
+    "reversible": true
   }
 ]
