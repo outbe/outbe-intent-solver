@@ -48,10 +48,6 @@ const chains: ChainMap<ChainMetadata> = {
         displayName: "Sepolia",
         nativeToken: {name: "Ether", symbol: "ETH", decimals: 18},
         rpcUrls: [
-            {
-                http: "https://clean-wiser-energy.ethereum-sepolia.quiknode.pro/8b14fb75c5bb2dee7e2963936532ea1d04c833fa/",
-                pagination: {maxBlockRange: 1000},
-            },
             {http: "https://ethereum-sepolia-rpc.publicnode.com", pagination: {maxBlockRange: 1000}},
         ],
         blockExplorers: [{
