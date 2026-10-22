@@ -56,11 +56,11 @@ export class AuctionManager {
         // Generate random salt
         const salt = ethers.utils.hexlify(ethers.utils.randomBytes(32));
 
-        // Compute commit hash: keccak256(abi.encode(orderId, outputAmount, salt))
+        // Bind the quote to this solver so another address cannot reveal it.
         const commitHash = ethers.utils.keccak256(
             defaultAbiCoder.encode(
-                ["bytes32", "uint256", "bytes32"],
-                [orderId, outputAmount, salt],
+                ["bytes32", "address", "uint256", "bytes32"],
+                [orderId, fillerAddress, outputAmount, salt],
             ),
         );
 
