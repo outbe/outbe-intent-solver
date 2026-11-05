@@ -157,8 +157,9 @@ NETWORK=testnet
 - `config/chains/testnet.ts` — Outbe Testnet, BSC Testnet, Sepolia
 - `config/chains/mainnet.ts` — Outbe Mainnet, Ethereum
 
-`config/chainMetadata.ts` only chooses between them. To change an RPC, an explorer or the gas settings
-of a chain, edit its entry in the profile — nothing is assembled from environment variables.
+`config/chainMetadata.ts` chooses between them. Testnet RPCs can be overridden at runtime with
+`BSC_RPC_URLS`, `OUTBE_RPC_URLS`, and `SEPOLIA_RPC_URLS`; each value may contain one URL or a
+comma-separated fallback list. Without an override, the profile's public RPC URLs are used.
 
 ### Trading Pairs Configuration
 
