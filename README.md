@@ -293,14 +293,14 @@ When an order is detected, the solver:
 1. Calculates competitive output amount using trading pair config (exchange rate + quote tolerance)
 2. Runs pre-commit checks (escrow collateral, token balance)
 3. Generates a random salt and commits a hash: `keccak256(abi.encode(orderId, outputAmount, salt))`
-4. Waits for commit deadline (precise sleep based on on-chain deadline)
+4. Waits for the commit deadline (a block number of the auction chain — phases count blocks, not seconds)
 
 #### Phase 2: Reveal
 
 After commit phase ends:
 1. Solver reveals the actual `outputAmount`, `salt`, and `originData` (encoded order data from `fillInstructions`)
 2. Contract verifies the reveal matches the committed hash
-3. Waits for auction to end (reveal deadline)
+3. Waits for auction to end (reveal deadline, also a block number)
 
 #### Phase 3: Winner & Claim
 

@@ -116,30 +116,31 @@ export class AuctionManager {
     }
 
     /**
-     * Wait for commit phase to end.
+     * Wait for commit phase to end. The commit deadline is a block number of the
+     * auction chain: reveal is open from that block on.
      */
     async waitForCommitEnd(orderId: string): Promise<void> {
         const commitDeadline = (await this.auctionCt.getCommitDeadline(orderId)).toNumber();
-        const chainName = await this.getChainName(orderId);
-        const provider = this.multiProvider.getProvider(chainName);
+        const provider = this.auctionCt.provider;
 
-        let block = await provider.getBlock("latest");
-        if (block.timestamp < commitDeadline) {
+        // Wait until the deadline block itself is the head: gas estimation of the
+        // reveal runs on the head block, so sending one block earlier would revert there.
+        let blockNumber = await provider.getBlockNumber();
+        if (blockNumber < commitDeadline) {
             this.log.info({
                 msg: "Waiting for commit phase to end",
                 orderId,
-                commitDeadline,
-                waitSeconds: commitDeadline - block.timestamp,
+                commitDeadlineBlock: commitDeadline,
+                waitBlocks: commitDeadline - blockNumber,
             });
         }
 
-        while (block.timestamp < commitDeadline) {
-            const remainingMs = (commitDeadline - block.timestamp) * 1000;
-            await new Promise((resolve) => setTimeout(resolve, Math.min(remainingMs, this.pollInterval)));
-            block = await provider.getBlock("latest");
+        while (blockNumber < commitDeadline) {
+            await new Promise((resolve) => setTimeout(resolve, this.pollInterval));
+            blockNumber = await provider.getBlockNumber();
         }
 
-        this.log.info({msg: "Commit phase ended", orderId, blockTimestamp: block.timestamp});
+        this.log.info({msg: "Commit phase ended", orderId, blockNumber});
     }
 
     /**
@@ -247,13 +248,5 @@ export class AuctionManager {
 
             this.auctionCt.on(filter, handler);
         });
-    }
-
-    /**
-     * Resolve chainName from auction contract's provider
-     */
-    private async getChainName(orderId: string): Promise<string> {
-        const network = await this.auctionCt.provider.getNetwork();
-        return chainIdsToName[network.chainId.toString()];
     }
 }
