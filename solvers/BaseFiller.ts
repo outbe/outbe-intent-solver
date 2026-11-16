@@ -1,3 +1,4 @@
+import { describeError } from "./utils.js";
 import type { MultiProvider } from "@hyperlane-xyz/sdk";
 import type { Result } from "@hyperlane-xyz/utils";
 import {
@@ -54,7 +55,7 @@ export abstract class BaseFiller<
         this.log.error({
           msg: `Failed processing intent`,
           intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
-          error: JSON.stringify(error),
+          error: await describeError(error, this.multiProvider),
         });
       }
     };

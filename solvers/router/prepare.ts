@@ -10,7 +10,7 @@ import type {OpenEventArgs, IntentData, RouterMetadata} from "./types.js";
 import {log, getTokenDecimals, calculateSolverOutput, formatTokenAmount} from "./utils.js";
 import * as OrderEncoder from "../../lib/OrderEncoder.js";
 import {chainIdsToName, getTradingPairs} from "../../config/index.js";
-import {
+import { describeError,
     retrieveOriginInfo,
     retrieveTargetInfo, retrieveTokenBalance,
     getTxDetails,
@@ -348,9 +348,9 @@ class RouterPrepare extends BasePrepare<
             return await this.runAuctionRound(parsedArgs, data, ctx);
         } catch (error: any) {
             this.log.error({
-                msg: "Cannot process order - validation failed",
+                msg: "Cannot process order",
                 orderId: parsedArgs.orderId,
-                error: error.message,
+                error: await describeError(error, this.multiProvider),
             });
             return {shouldFill: false};
         }

@@ -22,7 +22,7 @@ import {chainIdsToName} from "../../config/index.js";
 import {BaseFiller} from "../BaseFiller.js";
 import {allowBlockLists, metadata} from "./config/index.js";
 import {saveBlockNumber} from "./db.js";
-import {getTxDetails} from "../utils.js";
+import {describeError, getTxDetails} from "../utils.js";
 
 class RouterFiller extends BaseFiller<
     RouterMetadata,
@@ -252,7 +252,7 @@ class RouterFiller extends BaseFiller<
                                 this.log.error({
                                     msg: `Failed settling`,
                                     intent: `${this.metadata.protocolName}-${parsedArgs.orderId}`,
-                                    error,
+                                    error: await describeError(error, this.multiProvider),
                                 });
                                 return;
                             }
